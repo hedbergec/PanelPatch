@@ -32,7 +32,8 @@ program define PanelPatch_weight_adjust, rclass
         local w_`w' = ``w''
     }
 
-    quietly : mi export ice //make long mi export
+**?? JW 06/01/2023: added clear option
+    quietly : mi export ice, clear //make long mi export
 
     **bring in interim imputations
 
