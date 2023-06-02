@@ -167,7 +167,6 @@ program define PanelPatch , rclass
             local lead_vars `lead_vars' ``v'_leads'
             nois _dots `run' 0
             local ++run
-            
         }
 
         foreach v in `vorderedvars' `vunorderedvars' {
@@ -394,14 +393,17 @@ program define PanelPatch , rclass
         nois _dots 0, reps(`total_runs') title("Computing companion variables for `total_runs' unstable variables after imputations")
         local run = 1
 
+**?? JW 06/02/2023: fixed hardcoded i & j variables
+**?? JW 06/02/2023: PanelPatch breaks if user doesn't include numeric repeating variable type. "foreach v of varlist   {"
         foreach v of varlist `vorderedvars' `vunorderedvars'  {
-            quietly : PanelPatch_mk_compvars `v' if `touse', id(ChildID PreschoolID _mj) wave(`wave') categorical
+            quietly : PanelPatch_mk_compvars `v' if `touse', id(`i' `j' _mj) wave(`wave') categorical
             nois _dots `run' 0
             local ++run
         }
 
+**?? JW 06/02/2023: fixed hardcoded i & j variables
         foreach v of varlist `vnumericvars' {
-            quietly : PanelPatch_mk_compvars `v' if `touse', id(ChildID PreschoolID _mj) wave(`wave') 
+            quietly : PanelPatch_mk_compvars `v' if `touse', id(`i' `j' _mj) wave(`wave') 
             nois _dots `run' 0
             local ++run
         }
@@ -410,7 +412,7 @@ program define PanelPatch , rclass
         local run = 1
 
         local vars_to_trend ""
-
+        
         foreach v in `vnumericvars' {
             quietly : PanelPatch_predict_wrapper `v' i.(`sorderedvars' `sunorderedvars') ///
                 c.(`snumericvars') *_intrp if `touse', ///
@@ -667,8 +669,9 @@ program define PanelPatch , rclass
             tempfile weightadjust_data
 
             di _newline _newline "Starting Weight Adjustment"
-            
-            PanelPatch_weight_adjust Baseweight, j(`j') i(`i') wave(`wave') ///
+   
+   **?? JW 06/02/2023: fixed hardcoded Baseweight variable
+            PanelPatch_weight_adjust `weightvar', j(`j') i(`i') wave(`wave') ///
                 gen(wgtadj) `waxvars' ///
                 interimfile("`interim_imputations'") ///
                 snumericvars(`snumericvars') ///
