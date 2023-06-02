@@ -1,0 +1,66 @@
+{smcl}
+{* *! version 17.0 15apr2023}{...}
+{viewerjumpto "Syntax" "PanelPatch##syntax"}{...}
+{viewerjumpto "Menu" "PanelPatch##menu"}{...}
+{viewerjumpto "Description" "PanelPatch##description"}{...}
+{viewerjumpto "Options" "PanelPatch##options"}{...}
+{viewerjumpto "Examples" "PanelPatch##examples"}{...}
+
+{p2col:{bf:PanelPatch}}Multiple Imputation for Longitudinal Data
+
+{marker syntax}{...}
+{title:Syntax}
+{p}
+{cmd:PanelPatch} {varlist}{cmd:,} {opt conf(numlist)} [{opt x:split} {opt an:gle(integer)}]
+
+{marker menu}{...}
+{title:Menu}
+{phang}{bf:User > Graphics > Scatter with confidence intervals}
+
+{marker description}{...}
+{title:Description}
+{pstd}
+{cmd:PanelPatch} draws a scatter plot with lines indicating a range or 
+confidence intervals. Any values that fall outside the range are 
+considered outliers and are labelled. First and second variables 
+are the Y and X variables respectively. An optional third variable 
+is used as the label. If no third variable is specified, outliers 
+are labelled with their values. The range is assumed to be for the 
+Y variable, unless otherwise specified.
+
+{marker options}{...}
+{title:Options}
+{phang}{opt conf(numlist)} is required. It specifies the range or
+confidence intervals to be used. Two values must be specified.
+
+{phang}{opt x:split} specifies whether the supplied range is for the X
+variable. If {opt xsplit} is not specified the range is used with the Y variable
+
+{phang}{opt an:gle(integer)} specifies the angle applied to the labels.
+The default angle is -45 degrees.
+
+{marker examples}{...}
+{title:Examples}
+{hline}
+{pstd}Setup
+
+{phang2}{cmd:. sysuse auto}
+
+{phang2}{cmd:. summarize price, detail}
+
+{pstd}Scatter {cmd:price} against {cmd:mpg}, labelling anything above 95th 
+percentile or below 5th percentile as an outlier.
+
+{phang2}{cmd:. PanelPatch price mpg, conf(14500 3299)}
+
+{pstd}Scatter variable {cmd:price} against {cmd:mpg}, labelling anything outside 
+the range with labels angled at 90 degrees.
+
+{phang2}{cmd:. PanelPatch price mpg, conf(14500 3299) angle(90)}
+
+{pstd}Scatter variable {cmd:price} against {cmd:mpg}, putting variable {cmd:price} 
+on the x-axis, and labelling outliers with the variable {cmd:make}.
+
+{phang2}{cmd:. PanelPatch mpg price make, conf(14500 3299) xsplit}
+
+{hline}

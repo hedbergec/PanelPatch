@@ -1,0 +1,3 @@
+* make weight required (remove brackets)
+* error for low occuring categories
+* jesse fixes
