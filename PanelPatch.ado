@@ -395,14 +395,14 @@ program define PanelPatch , rclass
 
 **?? JW 06/02/2023: fixed hardcoded i & j variables
 **?? JW 06/02/2023: PanelPatch breaks if user doesn't include numeric repeating variable type. "foreach v of varlist   {"
-        foreach v of varlist `vorderedvars' `vunorderedvars'  {
+        foreach v in `vorderedvars' `vunorderedvars'  {
             quietly : PanelPatch_mk_compvars `v' if `touse', id(`i' `j' _mj) wave(`wave') categorical
             nois _dots `run' 0
             local ++run
         }
 
 **?? JW 06/02/2023: fixed hardcoded i & j variables
-        foreach v of varlist `vnumericvars' {
+        foreach v in `vnumericvars' {
             quietly : PanelPatch_mk_compvars `v' if `touse', id(`i' `j' _mj) wave(`wave') 
             nois _dots `run' 0
             local ++run
