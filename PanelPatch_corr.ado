@@ -28,10 +28,5 @@ program define PanelPatch_corr, rclass
     matrix `moments' = e(`matname')
     return scalar rho = (`moments'[1,5]-`moments'[1,1]*`moments'[1,2])/(sqrt(`moments'[1,3]-`moments'[1,1]^2)*sqrt(`moments'[1,4]-`moments'[1,2]^2))
 
-    
-
-    
-
 end
 
-PanelPatch_corr ed1 ed2, weightvar(Baseweight_wgtadj) j(PreschoolID )
