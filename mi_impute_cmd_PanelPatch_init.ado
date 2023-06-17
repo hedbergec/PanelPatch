@@ -4,8 +4,12 @@ program define mi_impute_cmd_PanelPatch_init //initialization program for PanelP
 
     forvalues m = 1/$MI_IMPUTE_user_opt_add {
         
-        use "$MI_IMPUTE_user_donordata" if _mj == `m' & _donormarker == 1 , clear
+        use "$MI_IMPUTE_user_donordata" if _mj == `m' & _donormarker == 1 & _imputemarker != 1  , clear
         
+        foreach v in $MI_IMPUTE_user_ivars {
+            capture drop `v'_cat_*
+        }
+
         drop _mj _donormarker _imputemarker
         local diagpath "$MI_IMPUTE_user_diagnosticdata"
         local savepath = "`diagpath'" + "PanelPatch_donors_`m'.dta"
@@ -14,7 +18,7 @@ program define mi_impute_cmd_PanelPatch_init //initialization program for PanelP
         
         global MI_IMPUTE_user_donor_`m' "`savepath'"
 
-        use "$MI_IMPUTE_user_donordata" if _mj == `m', clear
+        use "$MI_IMPUTE_user_donordata" if _mj == `m' & (_donormarker == 1 | _imputemarker == 1), clear
 
         keep _donorid _donorcluster _donormarker _imputemarker $MI_IMPUTE_user_j $MI_IMPUTE_user_i $MI_IMPUTE_user_wave
         local diagpath ""

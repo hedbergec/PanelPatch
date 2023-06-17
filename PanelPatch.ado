@@ -460,7 +460,7 @@ program define PanelPatch , rclass
     else {
         preserve
         use "`diagnosticdata'_predictions.dta", clear
-        local vars_to_trend : char _dta[varstotrend]
+        local vars_to_trend : char _dta[vars_to_trend]
         tempfile predictions
         quietly : save `predictions', replace
         
@@ -477,6 +477,14 @@ program define PanelPatch , rclass
         preserve
 
         use `predictions', clear 
+        local vars_to_trend : char _dta[vars_to_trend]
+
+        quietly : egen _PanelPatchallvarscheck = rowmiss(`ivars') 
+        quietly : recode _PanelPatchallvarscheck (0 = 1) (1/max = 0)
+        quietly : bysort `i' `j' `wave' : egen _minPPcheck = min(_PanelPatchallvarscheck)
+        quietly : replace _PanelPatchallvarscheck = _minPPcheck
+        quietly : replace _PanelPatchallvarscheck = . if _mj != 1
+        drop _minPPcheck
 
         local trend_collapse_list ""
         local varreps = wordcount("`vars_to_trend'") 
@@ -513,17 +521,19 @@ program define PanelPatch , rclass
         }
 
         quietly : replace `waveresponseflag' = . if _mj != 1
-
-        quietly : collapse (mean) `trend_collapse_list' (sum) `waveresponseflag', by(`i' `j') fast
+        
+        quietly : collapse (mean) `trend_collapse_list' (sum) `waveresponseflag' _PanelPatchallvarscheck, by(`i' `j') fast
 
         foreach v in `trend_collapse_list' {
             quietly : sum `v', meanonly
             quietly : replace `v' = `v' - r(mean)
         }
 
-        quietly : gen _donormarker = `waveresponseflag' == `nwaves' 
-        quietly : gen _imputemarker = `waveresponseflag' >= `minwave' & `waveresponseflag' < `nwaves'  
+        quietly : gen _donormarker = `waveresponseflag' == `nwaves' & _PanelPatchallvarscheck == `nwaves' 
+        quietly : gen _imputemarker = `waveresponseflag' >= `minwave' & `waveresponseflag' < `nwaves' & _donormarker == 0
+        tab _donormarker _imputemarker
 
+        drop _PanelPatchallvarscheck
         PanelPatch_cluster_algorithm `trend_collapse_list' if _donormarker == 1 | _imputemarker == 1, /// outcomes, row selection
             marker(_donormarker ) /// marker variable for which we need to keep some numbers of tagged values
             gen(_donorcluster) 
@@ -566,22 +576,22 @@ program define PanelPatch , rclass
 
         quietly : gen _donorid_master = .
         forvalues m = 1/`add' {
-            quietly : gen _donorid`m' = .
+            quietly : gen _donorid`m' = . 
         }
         tempvar tempdonorid
         quietly : levelsof _donorcluster, local(cluster_list)
         foreach k in `cluster_list' {
-            quietly : egen `tempdonorid' = group(`i' `j') if _donorcluster == `k' & _donormarker == 1
-            quietly : sum `tempdonorid' if _donorcluster == `k' & _donormarker == 1
+            quietly : egen `tempdonorid' = group(`i' `j') if _donorcluster == `k' & _donormarker == 1 & _imputemarker != 1 
+            quietly : sum `tempdonorid' if _donorcluster == `k' & _donormarker == 1 & _imputemarker != 1 
             local min = r(min)
             local max = r(max)
             quietly : replace _donorid_master = `tempdonorid' if ///
-                    _donorcluster == `k' & _donormarker == 1  
+                    _donorcluster == `k' & _donormarker == 1 & _imputemarker != 1 
             forvalues m = 1/`add' {
                 quietly : replace _donorid`m' = `tempdonorid' if ///
-                    _donorcluster == `k' & _donormarker == 1
+                    _donorcluster == `k' & _donormarker == 1 & _imputemarker != 1
                 quietly : replace _donorid`m' = runiformint(`min',`max') if ///
-                    _donorcluster == `k' & _donormarker == 0 & _imputemarker == 1
+                    _donorcluster == `k' & _donormarker != 1 & _imputemarker == 1
             }
             capture drop `tempdonorid'
         } 
@@ -628,6 +638,8 @@ program define PanelPatch , rclass
     mi register imputed `snumericvars' `sorderedvars' `sunorderedvars' ///
         `vnumericvars' `vorderedvars' `vunorderedvars'
     
+    capture drop PanelPatchImputed
+
     mi impute PanelPatch  ///
         `snumericvars' `sorderedvars' `sunorderedvars' ///
         `vnumericvars' `vorderedvars' `vunorderedvars' ///
@@ -635,7 +647,18 @@ program define PanelPatch , rclass
         add(`add') j(`j') i(`i') wave(`wave') ///
         donordata(`donorid_data') diagnosticdata(`diagnosticdata')
     
+    gen PanelPatchImputed = `touse' == 1 & _total_complete_waves >= `minwave' & _total_complete_waves < .
+
     quietly : mi update 
+
+    foreach v in `vunorderedvars' `sunorderedvars' {
+        capture drop `v'_cat_*
+    }
+
+    if "`diagnosticdata'" != ""  {
+        save "`diagnosticdata'_finalwaveimpute.dta", replace 
+        local diagdata `"`diagdata'"' `"`diagnosticdata'_finalwaveimpute.dta"'
+    }
     
     if "`weightvar'" != "" {
         if  "`_weightadjust_file'" == "" | ///
@@ -658,15 +681,8 @@ program define PanelPatch , rclass
                 local waxvars "xvars(`xvars')"
             }
 
-            tempfile weightadjust_data
-
-            if "`diagnosticdata'" != ""  {
-                save "`diagnosticdata'_finalwaveimpute.dta", replace 
-                local diagdata `"`diagdata'"' `"`diagnosticdata'_finalwaveimpute.dta"'
-            }
+            tempfile weightadjust_data            
             
-            
-            tempfile weightadjust_data
 
             di _newline _newline "Starting Weight Adjustment"
    
@@ -708,6 +724,9 @@ program define PanelPatch , rclass
 
         drop _total_complete_waves __* _touse
         
+        foreach v in `vunorderedvars' `sunorderedvars' {
+            capture drop `v'_cat_*
+        }
 
         if "`diagnosticdata'" != ""  {
             save "`diagnosticdata'_final_weightadjust.dta", replace 
@@ -715,7 +734,11 @@ program define PanelPatch , rclass
         
 
     }
-
+    capture drop _total_complete_waves __* _touse
+    foreach v in `vunorderedvars' `sunorderedvars' {
+        capture drop `v'_cat_*
+    }
+    
 
 end
 
