@@ -67,7 +67,7 @@ program define PanelPatch_weight_cluster, rclass //runs cluster_wrapper, checks 
         else { //if some, get to work
             local toclustervars ""
             di _newline
-            nois _dots 0, reps(`total_runs') title("Running linear LASSO Models for response and values for wave `w'")
+            nois _dots 0, reps(`total_runs') title("Running linear LASSO Models for response and values for wave `w'. Predictions which do not vary are discarded")
             local run = 1
             foreach v of varlist `response' `kvars' {
                 local xset = "i.`j'"
