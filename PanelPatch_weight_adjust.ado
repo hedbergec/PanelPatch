@@ -85,8 +85,6 @@ program define PanelPatch_weight_adjust, rclass
 
     *collapse over the imputations 
 
-    
-
     quietly : collapse `yvars' `yintrps' `varlist' if `touse', by(`i' `j' `wave' `touse') fast 
 
     *item impute stable 
@@ -200,41 +198,51 @@ program define PanelPatch_weight_adjust, rclass
         response(ris_`generate') gen(clst_`generate') ///
         wave(`wave') j(`j') i(`i')
 
-    capture drop `varlist'_`generate'
-    capture drop factor_`generate'
-    quietly : gen factor_`generate' = .
-    quietly : gen `varlist'_`generate' = `varlist' if `wave' == `w_1' & `touse' & select_clst_`generate' == 1
-    forvalues w = 2/`numberwaves' {
-        local lastwave = `w' - 1
-        tempvar carryforward constantw totallyingw numerw denomw  
-        quietly : gen `carryforward' = `varlist'_`generate' if ///
-            `wave' == `w_`lastwave'' & `touse' 
-        quietly : bysort `i' `j' : egen `constantw' = mean(`carryforward') if `touse'
-        quietly : gen `totallyingw' = `constantw' if `touse' ///
-            & `wave' == `w_`w'' & select_clst_`generate' == 1
-        quietly : bysort clst_`generate' : egen `numerw' = total(`totallyingw') if ///
-            `wave' == `w_`w'' & select_clst_`generate' == 1 & `touse' 
-        quietly : replace `totallyingw' = 0 if `touse' ///
-            & `wave' == `w_`w'' & select_clst_`generate' == 1 & ris_`generate' == 0
-        quietly : bysort clst_`generate' : egen `denomw' = total(`totallyingw') if ///
-            `wave' == `w_`w'' & select_clst_`generate' == 1 & `touse' 
-        
-        quietly : replace factor_`generate' = `numerw'/`denomw' if ///
-            `wave' == `w_`w'' & select_clst_`generate' == 1 & `touse' 
+    foreach wgtvar in `varlist' {
+        capture drop `wgtvar'_`generate'
+        capture drop f_`wgtvar'_`generate'
+        quietly : gen f_`wgtvar'_`generate' = .
+        quietly : gen `wgtvar'_`generate' = `wgtvar' if `wave' == `w_1' & `touse' & select_clst_`generate' == 1
+        forvalues w = 2/`numberwaves' {
+            local lastwave = `w' - 1
+            tempvar carryforward constantw totallyingw numerw denomw  
+            quietly : gen `carryforward' = `wgtvar'_`generate' if ///
+                `wave' == `w_`lastwave'' & `touse' 
+            quietly : bysort `i' `j' : egen `constantw' = mean(`carryforward') if `touse'
+            quietly : gen `totallyingw' = `constantw' if `touse' ///
+                & `wave' == `w_`w'' & select_clst_`generate' == 1
+            quietly : bysort clst_`generate' : egen `numerw' = total(`totallyingw') if ///
+                `wave' == `w_`w'' & select_clst_`generate' == 1 & `touse' 
+            quietly : replace `totallyingw' = 0 if `touse' ///
+                & `wave' == `w_`w'' & select_clst_`generate' == 1 & ris_`generate' == 0
+            quietly : bysort clst_`generate' : egen `denomw' = total(`totallyingw') if ///
+                `wave' == `w_`w'' & select_clst_`generate' == 1 & `touse' 
+            
+            quietly : replace f_`wgtvar'_`generate' = `numerw'/`denomw' if ///
+                `wave' == `w_`w'' & select_clst_`generate' == 1 & `touse' 
 
-        quietly : replace `varlist'_`generate' = `totallyingw'*factor_`generate' if ///
-            `wave' == `w_`w'' & select_clst_`generate' == 1 & `touse'
+            quietly : replace `wgtvar'_`generate' = `totallyingw'*f_`wgtvar'_`generate' if ///
+                `wave' == `w_`w'' & select_clst_`generate' == 1 & `touse'
+            capture drop `carryforward' 
+            capture drop `constantw' 
+            capture drop `totallyingw' 
+            capture drop `numerw' 
+            capture drop `denomw' 
+        }
+
+        quietly : replace `varlist'_`generate' = 0 if `varlist'_`generate' == .
     }
 
-    quietly : replace `varlist'_`generate' = 0 if `varlist'_`generate' == .
+    keep `i' `j' `wave' *_`generate' 
 
-    keep `i' `j' `wave' ris_`generate' clst_`generate' select_clst_`generate' factor_`generate' `varlist'_`generate'
+    quietly : describe *_`generate' 
+
+    local newvars = r(varlist)
+
+    return local newvars = "`newvars'"
 
     quietly : save "`saving'", replace
-    
-    
 
-   
 
 end
 

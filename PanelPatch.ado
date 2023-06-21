@@ -638,7 +638,7 @@ program define PanelPatch , rclass
     mi register imputed `snumericvars' `sorderedvars' `sunorderedvars' ///
         `vnumericvars' `vorderedvars' `vunorderedvars'
     
-    capture drop PanelPatchImputed
+    capture drop _PanelPatchImputed
 
     mi impute PanelPatch  ///
         `snumericvars' `sorderedvars' `sunorderedvars' ///
@@ -647,8 +647,8 @@ program define PanelPatch , rclass
         add(`add') j(`j') i(`i') wave(`wave') ///
         donordata(`donorid_data') diagnosticdata(`diagnosticdata')
     
-    gen PanelPatchImputed = `touse' == 1 & _total_complete_waves >= `minwave' & _total_complete_waves < .
-
+    quietly : gen _PanelPatchImputed = `touse' == 1 & _total_complete_waves >= `minwave' & _total_complete_waves < .
+    label var _PanelPatchImputed "Observation imputed or complete re PanelPatch"
     quietly : mi update 
 
     foreach v in `vunorderedvars' `sunorderedvars' {
