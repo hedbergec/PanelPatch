@@ -5,7 +5,7 @@ program define PanelPatch , rclass
     syntax varlist [if] [in] , ///
         add(numlist) j(varlist) i(varlist) Wave(varlist) ///
         WAVEResponseflag(varlist) ///
-        weightvar(varlist) /// weightvar required
+        [weightvar(varlist)] /// weightvar or set of vars
         [Burnin(integer 10)] ///
         [lassofolds(integer 10)] ///
         [Xvars(varlist)] ///
@@ -17,7 +17,7 @@ program define PanelPatch , rclass
         [VOrderedvars(varlist)] ///
         [diagnosticdata(string)] ///
         [clusterdata(string)] ///
-        [minwave(integer 3)] [useold]
+        [minwave(integer 3)] [RUNDIAGnostic] [useold]
 
     
     /*
@@ -739,6 +739,17 @@ program define PanelPatch , rclass
         capture drop `v'_cat_*
     }
     
+    if "`rundiagnostic'" != "" {
+        foreach opt in waveresponseflag weightvar snumericvars sunorderedvars vnumericvars ///
+        vunorderedvars vorderedvars {
+            if "" != "`opt'" {
+                local diagcode `diagcode' `opt'(``opt'')
+            }
+        }
+        PanelPatchDiag ///
+            , i(`i') j(`j') wave(`wave') ///
+            waveresponseflag(`waveresponseflag') `diagcode'
+    }
 
 end
 
