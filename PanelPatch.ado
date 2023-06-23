@@ -3,7 +3,7 @@
 
 program define PanelPatch , rclass
     syntax varlist [if] [in] , ///
-        add(numlist) j(varlist) i(varlist) Wave(varlist) ///
+        add(integer) j(varlist) i(varlist) Wave(varlist) ///
         WAVEResponseflag(varlist) ///
         [weightvar(varlist)] /// weightvar or set of vars
         [Burnin(integer 10)] ///
@@ -16,7 +16,6 @@ program define PanelPatch , rclass
         [VUnorderedvars(varlist)] ///
         [VOrderedvars(varlist)] ///
         [diagnosticdata(string)] ///
-        [clusterdata(string)] ///
         [minwave(integer 3)] [RUNDIAGnostic] [useold]
 
     

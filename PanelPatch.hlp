@@ -1,43 +1,69 @@
 {smcl}
-{* *! version 17.0 15apr2023}{...}
+{* *! version 17.0 23jun2023}{...}
 {viewerjumpto "Syntax" "PanelPatch##syntax"}{...}
 {viewerjumpto "Menu" "PanelPatch##menu"}{...}
 {viewerjumpto "Description" "PanelPatch##description"}{...}
 {viewerjumpto "Options" "PanelPatch##options"}{...}
+{viewerjumpto "Return" "PanelPatch##return"}{...}
 {viewerjumpto "Examples" "PanelPatch##examples"}{...}
+{viewerjumpto "Dependent commands" "PanelPatch##dependent"}{...}
 
-{p2col:{bf:PanelPatch}}Multiple Imputation for Longitudinal Data
+{p2col:{bf:PanelPatch}}Multiple Imputation and Unit Attrition Adjustment for Longitudinal Data
 
 {marker syntax}{...}
 {title:Syntax}
-{p}
-{cmd:PanelPatch} {varlist}{cmd:,} {opt conf(numlist)} [{opt x:split} {opt an:gle(integer)}]
+{phang}
+{cmd:PanelPatch} {varlist} to be imputed {opt [if]} {opt [in]} {cmd:,} 
+{opt add(integer)} {opt i(varlist)} {opt j(varlist)} 
+{opt w:ave(varlist)} {opt waver:esponseflag(varlist)} 
+[{opt x:vars(varlist)}] [{opt weightvar(varlist)}] 
+[{opt sn:umericvars(varlist)}] [{opt vn:umericvars(varlist)}]
+[{opt su:norderedvars(varlist)}]  [{opt vu:norderedvars(varlist)}] 
+[{opt so:rderedvars(varlist)}] [{opt vo:rderedvars(varlist)}] 
+[{opt diagnosticdata(string)}] [{opt minwave(integer)}] [{opt b:urnin(integer)}] 
+[{opt lassofolds(integer)}] [{opt rundiag:nostic}] 
 
-{marker menu}{...}
-{title:Menu}
-{phang}{bf:User > Graphics > Scatter with confidence intervals}
 
 {marker description}{...}
 {title:Description}
 {pstd}
-{cmd:PanelPatch} draws a scatter plot with lines indicating a range or 
-confidence intervals. Any values that fall outside the range are 
-considered outliers and are labelled. First and second variables 
-are the Y and X variables respectively. An optional third variable 
-is used as the label. If no third variable is specified, outliers 
-are labelled with their values. The range is assumed to be for the 
-Y variable, unless otherwise specified.
+{cmd:PanelPatch} is a Stata command designed to prepare data in {varlist} from panel studies for longitudinal analyses involving more than two time points, such as growth curve analysis. Abt Associates developed this  Stata command to facilitate the preparation of panel data with nonresponse prior to conducting longitudinal analyses such as growth curve analyses. The {cmd: PanelPatch} command is designed with two goals in mind. The first goal is to salvage a significant proportion of the partial information from incomplete case histories. The second goal is to enable typical Stata users to achieve the first goal without the assistance of senior statistical consultants. 
+
+{pstd}
+{cmd:PanelPatch} makes use of Stata's native {cmd:mi impute} procedures in addition to performing the final imputations using custom {cmd: mi impute} procedures. 
+
 
 {marker options}{...}
 {title:Options}
-{phang}{opt conf(numlist)} is required. It specifies the range or
-confidence intervals to be used. Two values must be specified.
+{phang}{opt add(integer)} is required. It specifies the number of multiple imputations to generate. See {opt add(numlist)} in {cmd: mi impute}.
+
+{phang}{opt i(varlist)} is required. It specifies the variable which identifies the unit of observation, unique within {opt: j}, which is repeated across {opt: wave}.
+
+
+{opt j(varlist)} 
+{opt w:ave(varlist)} {opt waver:esponseflag(varlist)} 
+[{opt x:vars(varlist)}] [{opt weightvar(varlist)}] 
+[{opt sn:umericvars(varlist)}] [{opt vn:umericvars(varlist)}]
+[{opt su:norderedvars(varlist)}]  [{opt vu:norderedvars(varlist)}] 
+[{opt so:rderedvars(varlist)}] [{opt vo:rderedvars(varlist)}] 
+[{opt diagnosticdata(string)}] [{opt minwave(integer)}] [{opt b:urnin(integer)}] 
+[{opt lassofolds(integer)}] [{opt rundiag:nostic}] 
+
+
+
 
 {phang}{opt x:split} specifies whether the supplied range is for the X
 variable. If {opt xsplit} is not specified the range is used with the Y variable
 
 {phang}{opt an:gle(integer)} specifies the angle applied to the labels.
 The default angle is -45 degrees.
+
+{marker return}{...}
+{title:Return}
+{hline}
+{pstd}PanelPatch returns the following in {cmd :r()}
+
+
 
 {marker examples}{...}
 {title:Examples}
@@ -62,5 +88,34 @@ the range with labels angled at 90 degrees.
 on the x-axis, and labelling outliers with the variable {cmd:make}.
 
 {phang2}{cmd:. PanelPatch mpg price make, conf(14500 3299) xsplit}
+
+{hline}
+
+
+{marker dependent}{...}
+{title:Dependent commands}
+{hline}
+
+
+{cmd:PanelPatch}, which is programmed in the file PanelPatch.ado, utilizes several other commands written for this command which are included in the package, including
+{pstd}
+mi_impute_cmd_PanelPatch_cleanup.ado
+mi_impute_cmd_PanelPatch_init.ado 
+mi_impute_cmd_PanelPatch_parse.ado
+{pstd}
+mi_impute_cmd_PanelPatch.ado
+PanelPatch_cluster_algorithm.ado
+PanelPatch_cluster_checker.ado
+PanelPatch_cluster_collapse.ado 
+PanelPatch_cluster_wrapper.ado 
+PanelPatch_corr.ado
+PanelPatch_gamma.ado
+PanelPatch_mk_compvars.ado
+PanelPatch_poly_trend_by.ado
+PanelPatch_predict_wrapper.ado
+PanelPatch_running_response.ado
+PanelPatch_weight_adjust.ado
+PanelPatch_weight_cluster.ado
+PanelPatchDiag.ado
 
 {hline}
