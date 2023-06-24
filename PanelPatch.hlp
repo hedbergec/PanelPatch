@@ -35,28 +35,51 @@
 
 {marker options}{...}
 {title:Options}
-{phang}{opt add(integer)} is required. It specifies the number of multiple imputations to generate. See {opt add(numlist)} in {cmd: mi impute}.
+{pstd} The following options are required
 
-{phang}{opt i(varlist)} is required. It specifies the variable which identifies the unit of observation, unique within {opt: j}, which is repeated across {opt: wave}.
+{phang}{opt add(integer)} specifies the number of multiple imputations to generate. See {opt add(numlist)} in {cmd: mi impute}.
 
+{phang}{opt i(varlist)} specifies the variable which identifies the unit of observation, unique within {opt: j}, which is repeated across {opt: wave}.
 
-{opt j(varlist)} 
-{opt w:ave(varlist)} {opt waver:esponseflag(varlist)} 
-[{opt x:vars(varlist)}] [{opt weightvar(varlist)}] 
-[{opt sn:umericvars(varlist)}] [{opt vn:umericvars(varlist)}]
-[{opt su:norderedvars(varlist)}]  [{opt vu:norderedvars(varlist)}] 
-[{opt so:rderedvars(varlist)}] [{opt vo:rderedvars(varlist)}] 
-[{opt diagnosticdata(string)}] [{opt minwave(integer)}] [{opt b:urnin(integer)}] 
-[{opt lassofolds(integer)}] [{opt rundiag:nostic}] 
+{phang}{opt j(varlist)} specifies the variable which identifies the primary sampling unique in the base wave. 
 
+{phang}{opt w:ave(varlist)} specifies the variable which identifies waves using ordered integers.
 
+{phang}{opt waver:esponseflag(varlist)} specifies a user created variable which is coded 1 if the unit responded to a wave, 0 otherwise.
 
+{pstd} To perform attrition weight adjustment, the following option is required 
 
-{phang}{opt x:split} specifies whether the supplied range is for the X
-variable. If {opt xsplit} is not specified the range is used with the Y variable
+{phang}{opt weightvar(varlist)} specifies the variable or variables (in the case of replicate weights) which need to be adjusted. New variables appended with _wgtadj are created. 
 
-{phang}{opt an:gle(integer)} specifies the angle applied to the labels.
-The default angle is -45 degrees.
+{pstd} At least one of the following options is required
+
+{phang}{opt sn:umericvars(varlist)} specifies which variables in {varlist} are stable across waves, real numbers, but not categorical.
+
+{phang}{opt so:rderedvars(varlist)} specifies which variables in {varlist} are stable across waves, integers, and represent ordered categories. These can include binary variables.
+
+{phang}{opt su:norderedvars(varlist)} specifies which variables in {varlist} are stable across waves, integers, and represent unordered categories. These can include binary variables.
+
+{pstd} At least one of the following options is required
+
+{phang}{opt vn:umericvars(varlist)} specifies which variables in {varlist} vary across waves, real numbers, but not categorical.
+
+{phang}{opt vo:rderedvars(varlist)} specifies which variables in {varlist} vary across waves, integers, and represent ordered categories. These can include binary variables.
+
+{phang}{opt vu:norderedvars(varlist)} specifies which variables in {varlist} vary across waves, integers, and represent unordered categories. These can include binary variables.
+
+{pstd} None of the following options are required
+
+{phang}{opt x:vars(varlist)} specifies any auxiliary variables which should be used in the interim imputations. Stable variables will use the first wave's values.  
+
+{phang}{opt diagnosticdata(string)} specifies a path and file name stub to save data containing intermidate steps in the PanelPatch process. 
+
+{phang}{opt minwave(integer)} specifies the minimum number of waves required for the returned imputations. Default is 3. 
+
+{phang}{opt b:urnin(integer)} specifies the number of burn-in cycles for Stata's native {cmd: mi impute chained} procedure. Default is 10.
+
+{phang}{opt lassofolds(integer)} specifies the number of folds to be used in Stata's {cmd: lasso} command. Default is 10.
+
+{phang}{opt rundiag:nostic} Triggers a set of diagnostic analyses to evaluate the likely quality of the imputations.  
 
 {marker return}{...}
 {title:Return}
@@ -96,26 +119,7 @@ on the x-axis, and labelling outliers with the variable {cmd:make}.
 {title:Dependent commands}
 {hline}
 
-
-{cmd:PanelPatch}, which is programmed in the file PanelPatch.ado, utilizes several other commands written for this command which are included in the package, including
-{pstd}
-mi_impute_cmd_PanelPatch_cleanup.ado
-mi_impute_cmd_PanelPatch_init.ado 
-mi_impute_cmd_PanelPatch_parse.ado
-{pstd}
-mi_impute_cmd_PanelPatch.ado
-PanelPatch_cluster_algorithm.ado
-PanelPatch_cluster_checker.ado
-PanelPatch_cluster_collapse.ado 
-PanelPatch_cluster_wrapper.ado 
-PanelPatch_corr.ado
-PanelPatch_gamma.ado
-PanelPatch_mk_compvars.ado
-PanelPatch_poly_trend_by.ado
-PanelPatch_predict_wrapper.ado
-PanelPatch_running_response.ado
-PanelPatch_weight_adjust.ado
-PanelPatch_weight_cluster.ado
-PanelPatchDiag.ado
+{phang}
+{cmd:PanelPatch}, which is programmed in the file PanelPatch.ado, utilizes several other authored commands, including {cmd: mi_impute_cmd_PanelPatch_cleanup}, {cmd: mi_impute_cmd_PanelPatch_init}, {cmd: mi_impute_cmd_PanelPatch_parse}, {cmd: mi_impute_cmd_PanelPatch}, {cmd: PanelPatch_cluster_algorithm}, {cmd: PanelPatch_cluster_checker}, {cmd: PanelPatch_cluster_collapse}, {cmd: PanelPatch_cluster_wrapper}, {cmd: PanelPatch_corr}, {cmd: PanelPatch_gamma}, {cmd: PanelPatch_mk_compvars}, {cmd: PanelPatch_poly_trend_by}, {cmd: PanelPatch_predict_wrapper}, {cmd: PanelPatch_running_response}, {cmd: PanelPatch_weight_adjust}, {cmd: PanelPatch_weight_cluster}, and {cmd: PanelPatchDiag}.
 
 {hline}

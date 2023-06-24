@@ -76,6 +76,16 @@ program define PanelPatch , rclass
         }
     }
 
+    if "`snumericvars' `sorderedvars' `sunorderedvars'" == "" {
+        display as error "at least one stable variable noted in one or more options snumericvars, sorderedvars, or sunorderedvars, required."
+        error 100
+    }
+
+    if "`vnumericvars' `vorderedvars' `vunorderedvars'" == "" {
+        display as error "at least one unstable variable noted in one or more options vnumericvars, vorderedvars, or vunorderedvars, required."
+        error 100
+    }
+
     **** make sure i and j uniquely id cases ****
 
     quietly : duplicates report `i' `j' `wave' if `touse'
