@@ -79,14 +79,12 @@
 
 {phang}{opt lassofolds(integer)} specifies the number of folds to be used in Stata's {cmd: lasso} command. Default is 10.
 
-{phang}{opt rundiag:nostic} Triggers a set of diagnostic analyses to evaluate the likely quality of the imputations.  
+{phang}{opt rundiag:nostic} Triggers a set of diagnostic analyses to evaluate the likely quality of the imputations. Requires a {opt weightvar} is also used.  
 
 {marker return}{...}
 {title:Return}
 {hline}
 {pstd}PanelPatch returns the following in {cmd :r()}
-
-
 
 {marker examples}{...}
 {title:Examples}

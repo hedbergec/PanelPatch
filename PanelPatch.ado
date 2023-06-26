@@ -748,7 +748,7 @@ program define PanelPatch , rclass
         capture drop `v'_cat_*
     }
     
-    if "`rundiagnostic'" != "" {
+    if "`rundiagnostic'" != "" & "`weightvar'" != "" {
         foreach opt in waveresponseflag weightvar snumericvars sunorderedvars vnumericvars ///
         vunorderedvars vorderedvars {
             if "" != "`opt'" {
