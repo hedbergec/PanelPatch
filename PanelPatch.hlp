@@ -5,7 +5,6 @@
 {viewerjumpto "Description" "PanelPatch##description"}{...}
 {viewerjumpto "Options" "PanelPatch##options"}{...}
 {viewerjumpto "Return" "PanelPatch##return"}{...}
-{viewerjumpto "Examples" "PanelPatch##examples"}{...}
 {viewerjumpto "Dependent commands" "PanelPatch##dependent"}{...}
 
 {p2col:{bf:PanelPatch}}Multiple Imputation and Unit Attrition Adjustment for Longitudinal Data
