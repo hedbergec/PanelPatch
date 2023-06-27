@@ -13,21 +13,17 @@
 {marker syntax}{...}
 {title:Syntax}
 {phang}
-{cmd:PanelPatch} {varlist} to be imputed {opt [if]} {opt [in]} {cmd:,} 
+{cmd:PanelPatch} {varlist} {opt [if]} {opt [in]} {cmd:,} 
 {opt add(integer)} {opt i(varlist)} {opt j(varlist)} 
-{opt w:ave(varlist)} {opt waver:esponseflag(varlist)} 
-[{opt x:vars(varlist)}] [{opt weightvar(varlist)}] 
-[{opt sn:umericvars(varlist)}] [{opt vn:umericvars(varlist)}]
-[{opt su:norderedvars(varlist)}]  [{opt vu:norderedvars(varlist)}] 
-[{opt so:rderedvars(varlist)}] [{opt vo:rderedvars(varlist)}] 
-[{opt diagnosticdata(string)}] [{opt minwave(integer)}] [{opt b:urnin(integer)}] 
-[{opt lassofolds(integer)}] [{opt rundiag:nostic}] 
+{opt w:ave(varlist)} {opt waver:esponseflag(varlist)} [ {it:options} ]
 
+{p 4 4 2}where {it:varlist} contains the list of variables to be imputed. The
+{cmd:*} and {cmd:?} wildcards are allowed in {it:varlist}.
 
 {marker description}{...}
 {title:Description}
 {pstd}
-{cmd:PanelPatch} is a Stata command designed to prepare data in {varlist} from panel studies for longitudinal analyses involving more than two time points, such as growth curve analysis. Abt Associates developed this  Stata command to facilitate the preparation of panel data with nonresponse prior to conducting longitudinal analyses such as growth curve analyses. The {cmd: PanelPatch} command is designed with two goals in mind. The first goal is to salvage a significant proportion of the partial information from incomplete case histories. The second goal is to enable typical Stata users to achieve the first goal without the assistance of senior statistical consultants. 
+{cmd:PanelPatch} is a Stata command designed to prepare longitudinal data involving more than two time points for analyses, such as a growth curve analysis. Abt Associates developed this command to facilitate the preparation of panel data with nonresponse prior to conducting longitudinal analyses. The {cmd: PanelPatch} command is designed with two goals in mind. The first goal is to salvage a significant proportion of the partial information from incomplete case histories. The second goal is to enable typical Stata users to achieve the first goal without the assistance of senior statistical consultants.
 
 {pstd}
 {cmd:PanelPatch} makes use of Stata's native {cmd:mi impute} procedures in addition to performing the final imputations using custom {cmd: mi impute} procedures. 
@@ -35,8 +31,8 @@
 
 {marker options}{...}
 {title:Options}
-{pstd} The following options are required
 
+{dlgtab:Required}
 {phang}{opt add(integer)} specifies the number of multiple imputations to generate. See {opt add(numlist)} in {cmd: mi impute}.
 
 {phang}{opt i(varlist)} specifies the variable which identifies the unit of observation, unique within {opt: j}, which is repeated across {opt: wave}.
@@ -47,11 +43,11 @@
 
 {phang}{opt waver:esponseflag(varlist)} specifies a user created variable which is coded 1 if the unit responded to a wave, 0 otherwise.
 
-{pstd} To perform attrition weight adjustment, the following option is required 
+{pstd} To perform attrition weight adjustment, the following option is required: 
 
 {phang}{opt weightvar(varlist)} specifies the variable or variables (in the case of replicate weights) which need to be adjusted. New variables appended with _wgtadj are created. 
 
-{pstd} At least one of the following options is required
+{dlgtab:At least one Stable Variable option is required}
 
 {phang}{opt sn:umericvars(varlist)} specifies which variables in {varlist} are stable across waves, real numbers, but not categorical.
 
@@ -59,7 +55,7 @@
 
 {phang}{opt su:norderedvars(varlist)} specifies which variables in {varlist} are stable across waves, integers, and represent unordered categories. These can include binary variables.
 
-{pstd} At least one of the following options is required
+{dlgtab:At least one Dynamic Variable option is required}
 
 {phang}{opt vn:umericvars(varlist)} specifies which variables in {varlist} vary across waves, real numbers, but not categorical.
 
@@ -67,7 +63,7 @@
 
 {phang}{opt vu:norderedvars(varlist)} specifies which variables in {varlist} vary across waves, integers, and represent unordered categories. These can include binary variables.
 
-{pstd} None of the following options are required
+{dlgtab:Not Required}
 
 {phang}{opt x:vars(varlist)} specifies any auxiliary variables which should be used in the interim imputations. Stable variables will use the first wave's values.  
 
@@ -79,38 +75,27 @@
 
 {phang}{opt lassofolds(integer)} specifies the number of folds to be used in Stata's {cmd: lasso} command. Default is 10.
 
-{phang}{opt rundiag:nostic} Triggers a set of diagnostic analyses to evaluate the likely quality of the imputations. Requires a {opt weightvar} is also used.  
+{phang}{opt rundiag:nostic} Triggers a set of diagnostic analyses to evaluate the likely quality of the imputations. Requires {opt weightvar}.
 
 {marker return}{...}
 {title:Return}
 {hline}
-{pstd}PanelPatch returns the following in {cmd :r()}
+{pstd}PanelPatch returns the following in {cmd :r()}:
 
-{marker examples}{...}
-{title:Examples}
-{hline}
-{pstd}Setup
-
-{phang2}{cmd:. sysuse auto}
-
-{phang2}{cmd:. summarize price, detail}
-
-{pstd}Scatter {cmd:price} against {cmd:mpg}, labelling anything above 95th 
-percentile or below 5th percentile as an outlier.
-
-{phang2}{cmd:. PanelPatch price mpg, conf(14500 3299)}
-
-{pstd}Scatter variable {cmd:price} against {cmd:mpg}, labelling anything outside 
-the range with labels angled at 90 degrees.
-
-{phang2}{cmd:. PanelPatch price mpg, conf(14500 3299) angle(90)}
-
-{pstd}Scatter variable {cmd:price} against {cmd:mpg}, putting variable {cmd:price} 
-on the x-axis, and labelling outliers with the variable {cmd:make}.
-
-{phang2}{cmd:. PanelPatch mpg price make, conf(14500 3299) xsplit}
-
-{hline}
+{synoptset 15 tabbed}{...}
+{p2col 5 15 19 2: Diagnostic Tables}{p_end}
+{synopt:{cmd:r(Table 1)}}For each wave, the number of study members for whom all the repeating variables were imputed because of wave nonresponse{p_end}
+{synopt:{cmd:r(Table 2)}}For each wave, the weighted mean values of binary and interval-valued repeating variables variable (with the associated cluster-corrected standard errors) before and after imputation{p_end}
+{synopt:{cmd:r(Table 3)}}For each wave, the weighted frequencies of categorical repeating variables (with the associated cluster-corrected standard errors) before and after imputation{p_end}
+{synopt:{cmd:r(Table 4)}}The cross-wave linear and quadratic trends in each binary and interval-valued variable (with the associated cluster-corrected standard error) before and after imputation{p_end}
+{synopt:{cmd:r(Table 5)}}The gamma statistic for the association of each ordered categorical repeating variable with wave before and after imputation{p_end}
+{synopt:{cmd:r(Table 6)}}The cross-wave linear trend in each level of each unordered categorical variable (with the associated cluster-corrected standard error) before and after imputation{p_end}
+{synopt:{cmd:r(Table 7)}}The correlation of wave 1 with wave 5 for each interval-valued repeating variable before and after imputation{p_end}
+{synopt:{cmd:r(Table 8)}}The R-squared for a linear model of each binary, ordered categorical, and interval-valued variable at wave 5 in terms of the complete set of stable variables before and after imputation{p_end}
+{synopt:{cmd:r(Table 9)}}The "design effect" induced by the differential weighting{p_end}
+{synopt:{cmd:r(Table 10)}}For each wave, the weighted mean values of binary and interval-valued repeating variables variable (with the associated cluster-corrected standard errors) before and after weight adjustment{p_end}
+{synopt:{cmd:r(Table 11)}}For each wave, the weighted frequencies of categorical repeating variables (with the associated cluster-corrected standard errors) before and after weight adjustment{p_end}
+{p2colreset}{...}
 
 
 {marker dependent}{...}
