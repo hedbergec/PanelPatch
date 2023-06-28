@@ -402,15 +402,12 @@ program define PanelPatch , rclass
         nois _dots 0, reps(`total_runs') title("Computing companion variables for `total_runs' unstable variables after imputations")
         local run = 1
 
-**?? JW 06/02/2023: fixed hardcoded i & j variables
-**?? JW 06/02/2023: PanelPatch breaks if user doesn't include numeric repeating variable type. "foreach v of varlist   {"
         foreach v in `vorderedvars' `vunorderedvars'  {
             quietly : PanelPatch_mk_compvars `v' if `touse', id(`i' `j' _mj) wave(`wave') categorical
             nois _dots `run' 0
             local ++run
         }
 
-**?? JW 06/02/2023: fixed hardcoded i & j variables
         foreach v in `vnumericvars' {
             quietly : PanelPatch_mk_compvars `v' if `touse', id(`i' `j' _mj) wave(`wave') 
             nois _dots `run' 0
@@ -694,8 +691,7 @@ program define PanelPatch , rclass
             
 
             di _newline _newline "Starting Weight Adjustment"
-   
-   **?? JW 06/02/2023: fixed hardcoded Baseweight variable
+
             PanelPatch_weight_adjust `weightvar', j(`j') i(`i') wave(`wave') ///
                 gen(wgtadj) `waxvars' ///
                 interimfile("`interim_imputations'") ///

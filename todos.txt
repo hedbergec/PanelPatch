@@ -1,3 +1,0 @@
-
-* error or message for low occuring categories
-* jesse fixes
