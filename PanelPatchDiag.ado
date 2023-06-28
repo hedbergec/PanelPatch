@@ -8,10 +8,15 @@ program define PanelPatchDiag, rclass
         [VNumericvars(varlist)] ///
         [VUnorderedvars(varlist)] ///
         [VOrderedvars(varlist)] 
-
+	
+	*First weight variable in case multiple weights listed
+	If "`weightvar'" != “” {
+		tokenize "`weightvar'"
+		local firstweightvar  `1’
+	}
 
     *Setting 
-    qui mi svyset `j' [pw = `weightvar'_wgtadj]
+    qui mi svyset `j' [pw = `firstweightvar'_wgtadj]
 	
 	*Imputed and/or Complete observation flag
 	tempvar insamp
@@ -72,7 +77,7 @@ program define PanelPatchDiag, rclass
         qui frames `fr'{ //changing frame to unset mi without deleting in working frame
         
         cap mi unset
-        svyset `j' [pw = `weightvar']
+        svyset `j' [pw = `firstweightvar']
         qui svy: mean `v', over(`wave') //non-imputed means using original sampling weight
         mat matPRE`v' = r(table) //pre matrix for variable
         } //end frame
@@ -140,7 +145,7 @@ program define PanelPatchDiag, rclass
     frame copy `r(currentframe)' `fr'
     qui frames `fr'{ //changing frame to unset mi without deleting in working frame
         cap mi unset
-        svyset `j' [pw = `weightvar']
+        svyset `j' [pw = `firstweightvar']
         
         foreach v in `binCAT'{
             svy: total `cons', over(`wave' `v')
@@ -235,7 +240,7 @@ program define PanelPatchDiag, rclass
 
         frames `fr`counter''{ //changing frame to unset mi without deleting in working frame
             cap mi unset
-            qui svyset `j' [pw = `weightvar']
+            qui svyset `j' [pw = `firstweightvar']
 
             qui svy: reg `v' `wave'
             qui lincom _b[`wave']
@@ -285,7 +290,7 @@ program define PanelPatchDiag, rclass
 	if _rc == 0{
 	
     qui foreach v in `vorderedvars'{
-        PanelPatch_gamma WaveID `v', weightvar(`weightvar'_wgtadj)
+        PanelPatch_gamma WaveID `v', weightvar(`firstweightvar'_wgtadj)
         mat `gocr' = nullmat(`gocr')\(`r(gamma)')
     } //v; unordered repeating vars
 
@@ -362,7 +367,7 @@ program define PanelPatchDiag, rclass
 
         frames `fr`v''{ //changing frame to unset mi without deleting in working frame
             cap mi unset
-            qui svyset `j' [pw = `weightvar']
+            qui svyset `j' [pw = `firstweightvar']
             
             qui glevelsof `v', local(lvls)
             foreach lvl in `lvls'{
@@ -428,14 +433,14 @@ program define PanelPatchDiag, rclass
             qui bys `i': ereplace `v1' = max(`v1')
             qui gen `v5' = `v' if `wave' == `lWAVE'
             qui bys `i': ereplace `v5' = max(`v5')
-            PanelPatch_corr `v1' `v5' if `wave' == `fWAVE', weightvar(`weightvar'_wgtadj)
+            PanelPatch_corr `v1' `v5' if `wave' == `fWAVE', weightvar(`firstweightvar'_wgtadj)
             mat `ivrCORRpost' = nullmat(`ivrCORRpost')\(`r(rho)')
             tempname fr
             qui pwf
             frame copy `r(currentframe)' `fr'
             frames `fr'{ //changing frame to unset mi without deleting in working frame
                 cap mi unset
-                svyset `j' [pw = `weightvar']
+                svyset `j' [pw = `firstweightvar']
                
                 tempvar x y x2 y2 xy 
                    
@@ -516,7 +521,7 @@ program define PanelPatchDiag, rclass
 
         frames `fr`v''{ //changing frame to unset mi without deleting in working frame
             cap mi unset
-            qui svyset `j' [pw = `weightvar']
+            qui svyset `j' [pw = `firstweightvar']
 
             qui svy: reg `v' `regCONT' b1.(`regCAT') if `wave' == `fWAVE'
             mat `preR2' = nullmat(`preR2')\e(r2)
@@ -558,12 +563,12 @@ program define PanelPatchDiag, rclass
     local fWAVE: list sizeof local(lvls)
     local fWAVE = `:word `fWAVE' of `lvls''
 
-    qui sum `weightvar' if `wave' == `fWAVE'
+    qui sum `firstweightvar' if `wave' == `fWAVE'
     local varWGT = r(sd)*r(sd)
     local meanWGT = r(mean)
     local kishDEFF = 1 + (`varWGT'/(`meanWGT'*`meanWGT'))
 
-    qui sum `weightvar'_wgtadj if `wave' == `fWAVE' & !missing(_donorid_master)
+    qui sum `firstweightvar'_wgtadj if `wave' == `fWAVE' & !missing(_donorid_master)
     local varWGTadj = r(sd)*r(sd)
     local meanWGTadj = r(mean)
     local kishDEFFadj = 1 + (`varWGTadj'/(`meanWGTadj'*`meanWGTadj'))
@@ -606,7 +611,7 @@ program define PanelPatchDiag, rclass
         qui pwf
         frame copy `r(currentframe)' `fr'
         frames `fr'{ //changing frame to unset mi without deleting in working frame
-            mi svyset `j' [pw = `weightvar']
+            mi svyset `j' [pw = `firstweightvar']
             
             qui mi estimate: svy: mean `v', over(`wave') //imputed means
             mat matPRE`v' = r(table) //pre matrix for variable
@@ -675,7 +680,7 @@ program define PanelPatchDiag, rclass
     qui pwf
     frame copy `r(currentframe)' `fr'
     qui frames `fr'{ //changing frame to unset mi without deleting in working frame
-        mi svyset `j' [pw = `weightvar']
+        mi svyset `j' [pw = `firstweightvar']
         
         foreach v in `binCAT'{
             mi est: svy: total `cons', over(`wave' `v')
