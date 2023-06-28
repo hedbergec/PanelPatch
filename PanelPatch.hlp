@@ -44,7 +44,7 @@
 
 {pstd} To perform attrition weight adjustment, the following option is required: 
 
-{phang}{opt weightvar(varlist)} specifies the variable or variables (in the case of replicate weights) which need to be adjusted. New variables appended with _wgtadj are created. 
+{phang}{opt weightvar(varlist)} specifies the variable or variables (in the case of replicate weights) which need to be adjusted. The first variable must be the primary weight (not a replicate). New variables appended with _wgtadj are created. 
 
 {dlgtab:At least one Stable Variable option is required}
 
