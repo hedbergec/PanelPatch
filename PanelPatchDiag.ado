@@ -1,4 +1,4 @@
-program define PanelPatchDiag
+program define PanelPatchDiag, rclass
     syntax, i(varlist) j(varlist) wave(varlist) ///
         WAVEResponseflag(varlist) ///
         [weightvar(varlist)] /// 
@@ -11,12 +11,45 @@ program define PanelPatchDiag
 
 
     *Setting 
-    mi svyset `j' [pw = `weightvar'_wgtadj]
+    qui mi svyset `j' [pw = `weightvar'_wgtadj]
+	
+	*Imputed and/or Complete observation flag
+	tempvar insamp
+	
+	cap confirm variable _1_`:word 1 of `snumericvars''
+	if _rc == 0{
+		qui gen `insamp' = !missing(_1_`:word 1 of `snumericvars'')
+	}
+	else {
+		cap confirm variable _1_`:word 1 of `sunorderedvars''
+		if _rc == 0{
+			qui gen `insamp' = !missing(_1_`:word 1 of `sunorderedvars'')
+		}
+		else {
+			cap confirm variable _1_`:word 1 of `sorderedvars''
+			if _rc == 0{
+				qui gen `insamp' = !missing(_1_`:word 1 of `sorderedvars'')
+				}
+			else {
+				di as err "Stable variable not found."
+			}
+		}
+	}
 
     *WaveImpute Diagnostic Tables
-
     { //***** Table 1 Imputed due to wave nonresponse
-    qui table `wave' if !missing(_donorid_master) & `waveresponseflag' == 0
+	tempvar iwn iwnRN
+	cap mat drop `iwn' `iwnRN'
+	qui tab `wave' if `insamp' == 1 & `waveresponseflag' == 0, matcell(`iwn') matrow(`iwnRN')
+	forv k = 1/`=rowsof(`iwnRN')'{
+		local wv = `iwnRN'[`k',1]
+		local rnIWN = "`rnIWN' `wv'"
+		local rnIWN: list clean rnIWN
+	}
+	qui mat rownames `iwn' = `rnIWN'
+	qui mat colnames `iwn' = "Frequency"
+	
+    qui table `wave' if `insamp' == 1 & `waveresponseflag' == 0
 
     qui collect title "Table 1. Study Members with Imputed Waves due to Wave Nonresponse"
     collect layout
@@ -24,6 +57,10 @@ program define PanelPatchDiag
     } //T1
 
     { //***** Table 2 Weighted Means for Repeating Numeric Variables Pre- and Post-Imputation
+	
+	cap confirm variable `:word 1 of `vnumericvars''
+	if _rc == 0{
+		
     tempvar wmvVNUM
     foreach v in `vnumericvars'{ //repeating numeric variables
         qui mi estimate: svy: mean `v', over(`wave') //imputed means
@@ -32,7 +69,7 @@ program define PanelPatchDiag
         tempname fr
         qui pwf
         frame copy `r(currentframe)' `fr'
-        frames `fr'{ //changing frame to unset mi without deleting in working frame
+        qui frames `fr'{ //changing frame to unset mi without deleting in working frame
         
         cap mi unset
         svyset `j' [pw = `weightvar']
@@ -63,9 +100,9 @@ program define PanelPatchDiag
     mat rownames `wmvVNUM' = `rn' //label rows
 
     *Convert matrix to rclass for -collect-
-    mata : st_matrix("r(`wmvVNUM')", st_matrix("`wmvVNUM'"))
-    mata : st_matrixrowstripe("r(`wmvVNUM')", st_matrixrowstripe("`wmvVNUM'"))
-    mata : st_matrixcolstripe("r(`wmvVNUM')", st_matrixcolstripe("`wmvVNUM'"))
+    qui mata : st_matrix("r(`wmvVNUM')", st_matrix("`wmvVNUM'"))
+    qui mata : st_matrixrowstripe("r(`wmvVNUM')", st_matrixrowstripe("`wmvVNUM'"))
+    qui mata : st_matrixcolstripe("r(`wmvVNUM')", st_matrixcolstripe("`wmvVNUM'"))
 
     qui collect clear
     qui collect get r(`wmvVNUM')
@@ -76,6 +113,7 @@ program define PanelPatchDiag
     qui collect title "Table 2. Weighted Mean Values for Binary and Interval-Valued Repeating Variables Pre- and Post-Imputation"
     collect layout (roweq#rowname)(colname#cmdset)
     qui collect export PanelPatch_DiagnosticTables.txt, as(txt) append
+	}
     } //T2
 
     { //***** Table 3 Weighted Frequency for Binary and Categorical Repeating Variables Pre- and Post-Imputation
@@ -92,7 +130,7 @@ program define PanelPatchDiag
         } //if fewer than 10 levels
     } //v; all vars
 
-    foreach v in `binCAT'{
+    qui foreach v in `binCAT'{
         mi est: svy: total `cons', over(`wave' `v')
         mat matPOST`v' = r(table)
     } //v; categorical repeating vars
@@ -100,7 +138,7 @@ program define PanelPatchDiag
     tempname fr
     qui pwf
     frame copy `r(currentframe)' `fr'
-    frames `fr'{ //changing frame to unset mi without deleting in working frame
+    qui frames `fr'{ //changing frame to unset mi without deleting in working frame
         cap mi unset
         svyset `j' [pw = `weightvar']
         
@@ -110,7 +148,7 @@ program define PanelPatchDiag
         }
     } //frames; using svyset in another frame
 
-    foreach v in `binCAT'{
+    qui foreach v in `binCAT'{
         local start = 1
         forv row = 1/`=colsof(matPRE`v')'{
             mat `wfVCATmini' = nullmat(`wfVCATmini')\(matPRE`v'[1,`row']\(matPRE`v'[2,`row']\matPOST`v'[1,`row'])\matPOST`v'[2,`row'])
@@ -150,12 +188,12 @@ program define PanelPatchDiag
         local rn: list clean rn
     } // var; variable list
 
-    mat rownames `wfVCAT' = `rn' //label rows
+    qui mat rownames `wfVCAT' = `rn' //label rows
 
     *Convert matrix to rclass for -collect-
-    mata : st_matrix("r(`wfVCAT')", st_matrix("`wfVCAT'"))
-    mata : st_matrixrowstripe("r(`wfVCAT')", st_matrixrowstripe("`wfVCAT'"))
-    mata : st_matrixcolstripe("r(`wfVCAT')", st_matrixcolstripe("`wfVCAT'"))
+    qui mata : st_matrix("r(`wfVCAT')", st_matrix("`wfVCAT'"))
+    qui mata : st_matrixrowstripe("r(`wfVCAT')", st_matrixrowstripe("`wfVCAT'"))
+    qui mata : st_matrixcolstripe("r(`wfVCAT')", st_matrixcolstripe("`wfVCAT'"))
 
     qui collect clear
     qui collect get r(`wfVCAT')
@@ -166,40 +204,53 @@ program define PanelPatchDiag
     qui collect title "Table 3. Weighted Frequency for Categorical Repeating Variables Pre- and Post-Imputation"
     collect layout (roweq#rowname)(colname#cmdset)
     qui collect export PanelPatch_DiagnosticTables.txt, as(txt) append
-
     } //T3
 
     { //***** Table 4 Cross-Wave Linear and Quadratic Trends in Binary and Interval-Valued Variables Pre- and Post-Imputation
     tempvar cwlqNUM
-
-    foreach v in `snumericvars' `vnumericvars'{
+	
+	cap confirm variable `:word 1 of `snumericvars''
+	if _rc == 0{
+		local t4 1
+	}
+	else {
+		cap confirm variable `: word 1 of `vnumericvars''
+		if _rc == 0{
+			local t4 1
+		}
+	}
+	
+	if `t4' == 1{
+	local counter 0
+    qui foreach v in `snumericvars' `vnumericvars'{
+		local ++counter
         qui mi est (_b[`wave']): svy: reg `v' `wave'
-        mat postL`v' = r(table)[1,1]\r(table)[2,1]
-        qui eststo postQ`i': mi est (_b[`wave'] + _b[c.`wave'#c.`wave']): svy: reg `v' c.`wave'##c.`wave'
-        mat postQ`v' = r(table)[1,1]\r(table)[2,1]
+        mat postL`counter' = r(table)[1,1]\r(table)[2,1]
+        qui eststo postQ`counter': mi est (_b[`wave'] + _b[c.`wave'#c.`wave']): svy: reg `v' c.`wave'##c.`wave'
+        mat postQ`counter' = r(table)[1,1]\r(table)[2,1]
         
-        tempname fr`v'
+        tempname fr`counter'
         qui pwf
-        frame copy `r(currentframe)' `fr`v''
+        frame copy `r(currentframe)' `fr`counter''
 
-        frames `fr`v''{ //changing frame to unset mi without deleting in working frame
+        frames `fr`counter''{ //changing frame to unset mi without deleting in working frame
             cap mi unset
             qui svyset `j' [pw = `weightvar']
 
             qui svy: reg `v' `wave'
             qui lincom _b[`wave']
-            mat preL`v' = r(estimate)\r(se)
+            mat preL`counter' = r(estimate)\r(se)
             
             qui svy: reg `v' c.`wave'##c.`wave'
             qui lincom _b[`wave'] + _b[c.`wave'#c.`wave']
-            mat preQ`v' = r(estimate)\r(se)
+            mat preQ`counter' = r(estimate)\r(se)
         } //frames; using svyset in another frame
 
         mat `cwlqNUM' = nullmat(`cwlqNUM')\(preL`v',postL`v',preQ`v',postQ`v')
     } //v; numeric vars
 
     *create macro for column names
-    mat colnames `cwlqNUM' = "Linear (pre)" "Linear (post)" "Quadratic (pre)" "Quadratic (post)" //label columns
+    qui mat colnames `cwlqNUM' = "Linear (pre)" "Linear (post)" "Quadratic (pre)" "Quadratic (post)" //label columns
 
     *create macro for row names
     cap macro drop _rn
@@ -211,9 +262,9 @@ program define PanelPatchDiag
     mat rownames `cwlqNUM' = `rn' //label rows
 
     *Convert matrix to rclass for -collect-
-    mata : st_matrix("r(`cwlqNUM')", st_matrix("`cwlqNUM'"))
-    mata : st_matrixrowstripe("r(`cwlqNUM')", st_matrixrowstripe("`cwlqNUM'"))
-    mata : st_matrixcolstripe("r(`cwlqNUM')", st_matrixcolstripe("`cwlqNUM'"))
+    qui mata : st_matrix("r(`cwlqNUM')", st_matrix("`cwlqNUM'"))
+    qui mata : st_matrixrowstripe("r(`cwlqNUM')", st_matrixrowstripe("`cwlqNUM'"))
+    qui mata : st_matrixcolstripe("r(`cwlqNUM')", st_matrixcolstripe("`cwlqNUM'"))
 
     qui collect clear
     qui collect get r(`cwlqNUM')
@@ -224,19 +275,22 @@ program define PanelPatchDiag
     qui collect title "Table 4. Cross-Wave Linear and Quadratic Trends in Binary and Interval-Valued Variables Pre- and Post-Imputation"
     collect layout (roweq#rowname)(colname#cmdset)
     qui collect export PanelPatch_DiagnosticTables.txt, as(txt) append
-
+	}
     } //T4
 
     { //***** Table 5 Gamma Statistic for Ordered Categorical Repeating Variables with Wave
     tempvar gocr
     cap mat drop `gocr'
-    foreach v in `vorderedvars'{
+	cap confirm variable `:word 1 of `vorderedvars''
+	if _rc == 0{
+	
+    qui foreach v in `vorderedvars'{
         PanelPatch_gamma WaveID `v', weightvar(`weightvar'_wgtadj)
         mat `gocr' = nullmat(`gocr')\(`r(gamma)')
     } //v; unordered repeating vars
 
     *column names
-    mat colnames `gocr' = "Goodman and Kruskal's Gamma" //label columns
+    qui mat colnames `gocr' = "Goodman and Kruskal's Gamma" //label columns
 
     *create macro for row names
     cap macro drop _rn
@@ -245,13 +299,12 @@ program define PanelPatchDiag
         local rn: list clean rn
     } // var; variable list
 
-    macro li _rn
-    mat rownames `gocr' = `rn' //label rows
+    qui mat rownames `gocr' = `rn' //label rows
 
     *Convert matrix to rclass for -collect-
-    mata : st_matrix("r(`gocr')", st_matrix("`gocr'"))
-    mata : st_matrixrowstripe("r(`gocr')", st_matrixrowstripe("`gocr'"))
-    mata : st_matrixcolstripe("r(`gocr')", st_matrixcolstripe("`gocr'"))
+    qui mata : st_matrix("r(`gocr')", st_matrix("`gocr'"))
+    qui mata : st_matrixrowstripe("r(`gocr')", st_matrixrowstripe("`gocr'"))
+    qui mata : st_matrixcolstripe("r(`gocr')", st_matrixcolstripe("`gocr'"))
 
     qui collect clear
     qui collect get r(`gocr')
@@ -262,12 +315,26 @@ program define PanelPatchDiag
     qui collect title "Table 5. Gamma Statistic between Wave and Ordered Categorical Variables"
     collect layout (rowname)(colname#cmdset)
     qui collect export PanelPatch_DiagnosticTables.txt, as(txt) append
+	}
     } //T5
 
     { //***** Table 6 Cross-Wave Linear Trends in Each Level of Unordered Categorical Variables Pre- and Post-Imputation
     tempvar cwlCAT
+	
+	cap confirm variable `:word 1 of `sunorderedvars''
+	if _rc == 0{
+		local t6 1
+	}
+	else {
+		cap confirm variable `: word 1 of `vunorderedvars''
+		if _rc == 0{
+			local t6 1
+		}
+	}
+	
+	if `t6' == 1{
 
-    foreach v in `sunorderedvars' `vunorderedvars'{
+    qui foreach v in `sunorderedvars' `vunorderedvars'{
         cap drop `v'?
         qui tab `v', gen(`v')
         
@@ -311,7 +378,7 @@ program define PanelPatchDiag
     } //v; numeric vars
 
     *column names
-    mat colnames `cwlCAT' = "Linear (pre)" "Linear (post)" //label columns
+    qui mat colnames `cwlCAT' = "Linear (pre)" "Linear (post)" //label columns
 
     *create macro for row names
     cap macro drop _rn
@@ -323,12 +390,12 @@ program define PanelPatchDiag
         }
     } // var; variable list
 
-    mat rownames `cwlCAT' = `rn' //label rows
+    qui mat rownames `cwlCAT' = `rn' //label rows
 
     *Convert matrix to rclass for -collect-
-    mata : st_matrix("r(`cwlCAT')", st_matrix("`cwlCAT'"))
-    mata : st_matrixrowstripe("r(`cwlCAT')", st_matrixrowstripe("`cwlCAT'"))
-    mata : st_matrixcolstripe("r(`cwlCAT')", st_matrixcolstripe("`cwlCAT'"))
+    qui mata : st_matrix("r(`cwlCAT')", st_matrix("`cwlCAT'"))
+    qui mata : st_matrixrowstripe("r(`cwlCAT')", st_matrixrowstripe("`cwlCAT'"))
+    qui mata : st_matrixcolstripe("r(`cwlCAT')", st_matrixcolstripe("`cwlCAT'"))
 
     qui collect clear
     qui collect get r(`cwlCAT')
@@ -339,16 +406,20 @@ program define PanelPatchDiag
     qui collect title "Table 6. Cross-Wave Linear Trends in Each Level of Unordered Categorical Variables Pre- and Post-Imputation"
     collect layout (roweq#rowname)(colname#cmdset)
     qui collect export PanelPatch_DiagnosticTables.txt, as(txt) append
+	}
     } //T6
 
     { //***** Table 7 The correlation of each interval-valued repeating variable and Wave before and after imputation
+	cap confirm variable `:word 1 of `vnumericvars''
+	if _rc == 0{
+		
+	qui glevelsof `wave', local(lvls)
     local fWAVE = `:word 1 of `lvls''
-    qui glevelsof `wave', local(lvls)
     local lWAVE: list sizeof local(lvls)
     local lWAVE = `:word `lWAVE' of `lvls''
     tempvar ivrCORR ivrCORRpost ivrCORRpre
     cap mat drop `ivrCORR' `ivrCORRpost' `ivrCORRpre'
-    foreach v in `vnumericvars'{
+    qui foreach v in `vnumericvars'{
         qui glevelsof `v'
         if r(J)>10{
             tempvar v1 v5
@@ -364,9 +435,9 @@ program define PanelPatchDiag
             frames `fr'{ //changing frame to unset mi without deleting in working frame
                 cap mi unset
                 svyset `j' [pw = `weightvar']
-                
+               
                 tempvar x y x2 y2 xy 
-                    
+                   
                 qui: gen double `x' = `v' if `wave' == `fWAVE'
                 qui bys `i': ereplace `x' = max(`x')
                 quietly : gen double `x2' = `x'^2
@@ -385,7 +456,6 @@ program define PanelPatchDiag
 
     mat `ivrCORR' = (`ivrCORRpre'), (`ivrCORRpost')
 
-
     *column names
     mat colnames `ivrCORR' = "Pre" "Post" //label columns
 
@@ -399,12 +469,12 @@ program define PanelPatchDiag
         } //if more than 10 categories, treat as interval-valued
     } //v; numeric repeating vars
 
-    mat rownames `ivrCORR' = `rn' //label rows
+    qui mat rownames `ivrCORR' = `rn' //label rows
 
     *Convert matrix to rclass for -collect-
-    mata : st_matrix("r(`ivrCORR')", st_matrix("`ivrCORR'"))
-    mata : st_matrixrowstripe("r(`ivrCORR')", st_matrixrowstripe("`ivrCORR'"))
-    mata : st_matrixcolstripe("r(`ivrCORR')", st_matrixcolstripe("`ivrCORR'"))
+    qui mata : st_matrix("r(`ivrCORR')", st_matrix("`ivrCORR'"))
+    qui mata : st_matrixrowstripe("r(`ivrCORR')", st_matrixrowstripe("`ivrCORR'"))
+    qui mata : st_matrixcolstripe("r(`ivrCORR')", st_matrixcolstripe("`ivrCORR'"))
 
     qui collect clear
     qui collect get r(`ivrCORR')
@@ -415,6 +485,7 @@ program define PanelPatchDiag
     qui collect title "Table 7. Corralation between Wave and Interval-Valued Repeating Variables Pre- and Post-Imputation"
     collect layout (rowname)(colname#cmdset)
     qui collect export PanelPatch_DiagnosticTables.txt, as(txt) append
+	}
     } //T7
 
     { //***** Table 8 R-squared for Linear Regression of Binary, Ordered Categorical, and Interval-Valued Variables on the set of Stable Variables in the Final Wave Pre- and Post-Imputation
@@ -430,7 +501,7 @@ program define PanelPatchDiag
     local M = r(M)
     scalar r2 = 0
 
-    foreach v in `snumericvars' `sorderedvars' `sunorderedvars' `vnumericvars' `vorderedvars' `vunorderedvars'{
+    qui foreach v in `snumericvars' `sorderedvars' `sunorderedvars' `vnumericvars' `vorderedvars' `vunorderedvars'{
         local regCONT: list regCONT - v
         local regCAT: list regCAT - v
         qui mi xeq 1/`M': svy: reg `v' `regCONT' b1.(`regCAT') if `wave' == `fWAVE'; scalar r2 = r2 + atanh(sqrt(e(r2)))
@@ -455,7 +526,7 @@ program define PanelPatchDiag
     mat `R2all' = (`preR2'), (`postR2')
 
     *column names
-    mat colnames `R2all' = "Pre" "Post" //label columns
+    qui mat colnames `R2all' = "Pre" "Post" //label columns
 
     *create macro for row names
     cap macro drop _rn
@@ -464,12 +535,12 @@ program define PanelPatchDiag
         local rn: list clean rn
     } // var; variable list
 
-    mat rownames `R2all' = `rn' //label rows
+    qui mat rownames `R2all' = `rn' //label rows
 
     *Convert matrix to rclass for -collect-
-    mata : st_matrix("r(`R2all')", st_matrix("`R2all'"))
-    mata : st_matrixrowstripe("r(`R2all')", st_matrixrowstripe("`R2all'"))
-    mata : st_matrixcolstripe("r(`R2all')", st_matrixcolstripe("`R2all'"))
+    qui mata : st_matrix("r(`R2all')", st_matrix("`R2all'"))
+    qui mata : st_matrixrowstripe("r(`R2all')", st_matrixrowstripe("`R2all'"))
+    qui mata : st_matrixcolstripe("r(`R2all')", st_matrixcolstripe("`R2all'"))
 
     qui collect clear
     qui collect get r(`R2all')
@@ -497,18 +568,18 @@ program define PanelPatchDiag
     local kishDEFFadj = 1 + (`varWGTadj'/(`meanWGTadj'*`meanWGTadj'))
 
     tempvar kD
-    mat `kD' = `kishDEFF', `kishDEFFadj'
+    qui mat `kD' = `kishDEFF', `kishDEFFadj'
 
     *column names
-    mat colnames `kD' = "Original Weight" "Adjusted Weight" //label columns
+    qui mat colnames `kD' = "Original Weight" "Adjusted Weight" //label columns
 
     *row names
-    mat rownames `kD' = "Kish Design Effect"
+    qui mat rownames `kD' = "Kish Design Effect"
 
     *Convert matrix to rclass for -collect-
-    mata : st_matrix("r(`kD')", st_matrix("`kD'"))
-    mata : st_matrixrowstripe("r(`kD')", st_matrixrowstripe("`kD'"))
-    mata : st_matrixcolstripe("r(`kD')", st_matrixcolstripe("`kD'"))
+    qui mata : st_matrix("r(`kD')", st_matrix("`kD'"))
+    qui mata : st_matrixrowstripe("r(`kD')", st_matrixrowstripe("`kD'"))
+    qui mata : st_matrixcolstripe("r(`kD')", st_matrixcolstripe("`kD'"))
 
     qui collect clear
     qui collect get r(`kD')
@@ -522,8 +593,10 @@ program define PanelPatchDiag
     } //T9
 
     { //***** Table 10 Weighted Means for Repeating Numeric Variables Pre- and Post-Weight Adjustment
+	cap confirm variable `:word 1 of `vnumericvars''
+	if _rc == 0{
     tempvar awmvVNUM
-    foreach v in `vnumericvars'{ //repeating numeric variables
+    qui foreach v in `vnumericvars'{ //repeating numeric variables
         qui mi estimate: svy: mean `v', over(`wave') //imputed means
         mat matPOST`v' = r(table) //post matrix for variable
         
@@ -549,7 +622,7 @@ program define PanelPatchDiag
         local cn: list clean cn
     } //w; levels of wave
 
-    mat colnames `awmvVNUM' = `cn' //label columns
+    qui mat colnames `awmvVNUM' = `cn' //label columns
 
     *create macro for row names
     cap macro drop _rn
@@ -558,12 +631,12 @@ program define PanelPatchDiag
         local rn: list clean rn
     } // var; variable list
 
-    mat rownames `awmvVNUM' = `rn' //label rows
+    qui mat rownames `awmvVNUM' = `rn' //label rows
 
     *Convert matrix to rclass for -collect-
-    mata : st_matrix("r(`awmvVNUM')", st_matrix("`awmvVNUM'"))
-    mata : st_matrixrowstripe("r(`awmvVNUM')", st_matrixrowstripe("`awmvVNUM'"))
-    mata : st_matrixcolstripe("r(`awmvVNUM')", st_matrixcolstripe("`awmvVNUM'"))
+    qui mata : st_matrix("r(`awmvVNUM')", st_matrix("`awmvVNUM'"))
+    qui mata : st_matrixrowstripe("r(`awmvVNUM')", st_matrixrowstripe("`awmvVNUM'"))
+    qui mata : st_matrixcolstripe("r(`awmvVNUM')", st_matrixcolstripe("`awmvVNUM'"))
 
     qui collect clear
     qui collect get r(`awmvVNUM')
@@ -574,6 +647,7 @@ program define PanelPatchDiag
     qui collect title "Table 10. Weighted Means for Repeating Numeric Variables Pre- and Post-Weight Adjustment"
     collect layout (roweq#rowname)(colname#cmdset)
     qui collect export PanelPatch_DiagnosticTables.txt, as(txt) append
+	}
     } //T10
 
     { //***** Table 11 Weighted Frequency for Binary and Categorical Repeating Variables Pre- and Post-Weight Adjustment
@@ -590,7 +664,7 @@ program define PanelPatchDiag
         } //if fewer than 10 levels
     } //v; all vars
 
-    foreach v in `binCAT'{
+    qui foreach v in `binCAT'{
         mi est: svy: total `cons', over(`wave' `v')
         mat matPOST`v' = r(table)
     } //v; categorical repeating vars
@@ -599,7 +673,7 @@ program define PanelPatchDiag
     tempname fr
     qui pwf
     frame copy `r(currentframe)' `fr'
-    frames `fr'{ //changing frame to unset mi without deleting in working frame
+    qui frames `fr'{ //changing frame to unset mi without deleting in working frame
         mi svyset `j' [pw = `weightvar']
         
         foreach v in `binCAT'{
@@ -608,7 +682,7 @@ program define PanelPatchDiag
         }
     } //frames; using svyset in another frame
 
-    foreach v in `binCAT'{
+    qui foreach v in `binCAT'{
         local start = 1
         forv row = 1/`=colsof(matPRE`v')'{
             mat `awfVCATmini' = nullmat(`awfVCATmini')\(matPRE`v'[1,`row']\(matPRE`v'[2,`row']\matPOST`v'[1,`row'])\matPOST`v'[2,`row'])
@@ -636,11 +710,11 @@ program define PanelPatchDiag
         local cn: list clean cn
     } //w; levels of wave
 
-    mat colnames `awfVCAT' = `cn' //label columns
+    qui mat colnames `awfVCAT' = `cn' //label columns
 
     *create macro for row names
     cap macro drop _rn
-    foreach var in `binCAT'{ //using var name as "equation" for labeling
+    qui foreach var in `binCAT'{ //using var name as "equation" for labeling
         qui glevelsof `var', local(lvls)
         foreach lvl in `lvls'{
             local rn = `"`rn' "`var'_`lvl' (pre):Weighted Frequency" "`var'_`lvl'(pre):Clustered SE" "`var'_`lvl'(post):Weighted Frequency" "`var'_`lvl'(post):Clustered SE""'
@@ -648,12 +722,12 @@ program define PanelPatchDiag
         local rn: list clean rn
     } // var; variable list
 
-    mat rownames `awfVCAT' = `rn' //label rows
+    qui mat rownames `awfVCAT' = `rn' //label rows
 
     *Convert matrix to rclass for -collect-
-    mata : st_matrix("r(`awfVCAT')", st_matrix("`awfVCAT'"))
-    mata : st_matrixrowstripe("r(`awfVCAT')", st_matrixrowstripe("`awfVCAT'"))
-    mata : st_matrixcolstripe("r(`awfVCAT')", st_matrixcolstripe("`awfVCAT'"))
+    qui mata : st_matrix("r(`awfVCAT')", st_matrix("`awfVCAT'"))
+    qui mata : st_matrixrowstripe("r(`awfVCAT')", st_matrixrowstripe("`awfVCAT'"))
+    qui mata : st_matrixcolstripe("r(`awfVCAT')", st_matrixcolstripe("`awfVCAT'"))
 
     qui collect clear
     qui collect get r(`awfVCAT')
@@ -665,4 +739,10 @@ program define PanelPatchDiag
     collect layout (roweq#rowname)(colname#cmdset)
     qui collect export PanelPatch_DiagnosticTables.txt, as(txt) append
     } //T11
+	
+	local matrices `iwn' `wmvVNUM' `wfVCAT' `cwlqNUM' `gocr' `cwlCAT' `ivrCORR' `R2all' `kD' `awmvVNUM' `awfVCAT'
+	forv tabs = 1/11{
+		cap return matrix table`tabs' = `:word `tabs' of `matrices''
+	}
+
 end
