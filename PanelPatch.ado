@@ -749,7 +749,7 @@ program define PanelPatch , rclass
     }
     
     if "`rundiagnostic'" != "" & "`weightvar'" != "" {
-        foreach opt in waveresponseflag weightvar snumericvars sunorderedvars vnumericvars ///
+        foreach opt in weightvar snumericvars sunorderedvars vnumericvars ///
         vunorderedvars vorderedvars {
             if "" != "`opt'" {
                 local diagcode `diagcode' `opt'(``opt'')
