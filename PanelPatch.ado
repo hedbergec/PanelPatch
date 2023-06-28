@@ -758,6 +758,12 @@ program define PanelPatch , rclass
         PanelPatchDiag ///
             , i(`i') j(`j') wave(`wave') ///
             waveresponseflag(`waveresponseflag') `diagcode'
+
+		forv tabs = 1/11{
+			tempvar mat`tabs'
+			cap mat `mat`tabs'' = r(table`tabs') 
+			cap return matrix table`tabs' = `mat`tabs''
+		}
     }
 
 end
