@@ -208,7 +208,7 @@ program define PanelPatchDiag, rclass
 
     { //***** Table 4 Cross-Wave Linear and Quadratic Trends in Binary and Interval-Valued Variables Pre- and Post-Imputation
     tempvar cwlqNUM
-	
+	local t4 0
 	cap confirm variable `:word 1 of `snumericvars''
 	if _rc == 0{
 		local t4 1
@@ -321,6 +321,7 @@ program define PanelPatchDiag, rclass
     { //***** Table 6 Cross-Wave Linear Trends in Each Level of Unordered Categorical Variables Pre- and Post-Imputation
     tempvar cwlCAT
 	
+	local t6 0
 	cap confirm variable `:word 1 of `sunorderedvars''
 	if _rc == 0{
 		local t6 1
