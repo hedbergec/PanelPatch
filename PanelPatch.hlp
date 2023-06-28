@@ -17,7 +17,7 @@
 {opt w:ave(varlist)} {opt waver:esponseflag(varlist)} [ {it:options} ]
 
 {p 4 4 2}where {it:varlist} contains the list of variables to be imputed. The
-{cmd:*} and {cmd:?} wildcards are allowed in {it:varlist}.
+{cmd:*} and {cmd:?} wildcards are allowed in {it:varlist}. Note that all variables in {it:varlist} must be uniquly identified in the options {opt sn:umericvars(varlist)}, {opt so:rderedvars(varlist)}, {opt su:norderedvars(varlist)}, {opt vn:umericvars(varlist)}, {opt vo:rderedvars(varlist)}, and {opt vu:norderedvars(varlist)}, if used. 
 
 {marker description}{...}
 {title:Description}
@@ -52,7 +52,7 @@
 
 {phang}{opt so:rderedvars(varlist)} specifies which variables in {varlist} are stable across waves, integers, and represent ordered categories. These can include binary variables.
 
-{phang}{opt su:norderedvars(varlist)} specifies which variables in {varlist} are stable across waves, integers, and represent unordered categories. These can include binary variables.
+{phang}{opt su:norderedvars(varlist)} specifies which variables in {varlist} are stable across waves, integers, and represent unordered categories. These can include binary variables. Note that variables with rarely occuring categories may cause problems in the chained item imputation, resulting in a convergence error. 
 
 {dlgtab:At least one Dynamic Variable option is required}
 
@@ -60,7 +60,7 @@
 
 {phang}{opt vo:rderedvars(varlist)} specifies which variables in {varlist} vary across waves, integers, and represent ordered categories. These can include binary variables.
 
-{phang}{opt vu:norderedvars(varlist)} specifies which variables in {varlist} vary across waves, integers, and represent unordered categories. These can include binary variables.
+{phang}{opt vu:norderedvars(varlist)} specifies which variables in {varlist} vary across waves, integers, and represent unordered categories. These can include binary variables. Note that variables with rarely occuring categories within the first, last, or intermediate waves may cause problems in the chained item imputation, resulting in a convergence error. 
 
 {dlgtab:Not Required}
 
