@@ -44,6 +44,7 @@ program define PanelPatchDiag, rclass
 
     *WaveImpute Diagnostic Tables
     { //***** Table 1 Imputed due to wave nonresponse
+	di _newline _newline "Creating (if applicable) diagnostic Table 1 of 11."
 	tempvar iwn iwnRN
 	cap mat drop `iwn' `iwnRN'
 	qui tab `wave' if `insamp' == 1 & `waveresponseflag' == 0, matcell(`iwn') matrow(`iwnRN')
@@ -63,7 +64,7 @@ program define PanelPatchDiag, rclass
     } //T1
 
     { //***** Table 2 Weighted Means for Repeating Numeric Variables Pre- and Post-Imputation
-	
+	di _newline _newline "Creating (if applicable) diagnostic Table 2 of 11."
 	cap confirm variable `:word 1 of `vnumericvars''
 	if _rc == 0{
 		
@@ -82,7 +83,8 @@ program define PanelPatchDiag, rclass
         qui svy: mean `v', over(`wave') //non-imputed means using original sampling weight
         mat matPRE`v' = r(table) //pre matrix for variable
         } //end frame
-        
+        cap frame drop `fr'
+
         mat `wmvVNUM' = nullmat(`wmvVNUM')\matPRE`v'[1..2,1...]\matPOST`v'[1..2,1...] //matrix only keeping means and SDs for pre and post
     } //v; 
 
@@ -123,6 +125,7 @@ program define PanelPatchDiag, rclass
     } //T2
 
     { //***** Table 3 Weighted Frequency for Binary and Categorical Repeating Variables Pre- and Post-Imputation
+	di _newline _newline "Creating (if applicable) diagnostic Table 3 of 11."
     cap mat drop `wfVCAT'
     cap drop `cons'
     tempvar wfVCATmini wfVCATwide wfVCAT cons
@@ -154,6 +157,7 @@ program define PanelPatchDiag, rclass
             mat matPRE`v' = r(table)
         }
     } //frames; using svyset in another frame
+	cap frame drop `fr'
 
     qui foreach v in `binCAT'{
         local start = 1
@@ -214,6 +218,7 @@ program define PanelPatchDiag, rclass
     } //T3
 
     { //***** Table 4 Cross-Wave Linear and Quadratic Trends in Binary and Interval-Valued Variables Pre- and Post-Imputation
+	di _newline _newline "Creating (if applicable) diagnostic Table 4 of 11."
     tempvar cwlqNUM
 	local t4 0
 	cap confirm variable `:word 1 of `snumericvars''
@@ -252,6 +257,7 @@ program define PanelPatchDiag, rclass
             qui lincom _b[`wave'] + _b[c.`wave'#c.`wave']
             mat preQ`counter' = r(estimate)\r(se)
         } //frames; using svyset in another frame
+		cap frame drop `fr`counter''
 
         mat `cwlqNUM' = nullmat(`cwlqNUM')\(preL`counter',postL`counter',preQ`counter',postQ`counter')
     } //v; numeric vars
@@ -286,6 +292,7 @@ program define PanelPatchDiag, rclass
     } //T4
 
     { //***** Table 5 Gamma Statistic for Ordered Categorical Repeating Variables with Wave
+	di _newline _newline "Creating (if applicable) diagnostic Table 5 of 11."
     tempvar gocr
     cap mat drop `gocr'
 	cap confirm variable `:word 1 of `vorderedvars''
@@ -326,6 +333,7 @@ program define PanelPatchDiag, rclass
     } //T5
 
     { //***** Table 6 Cross-Wave Linear Trends in Each Level of Unordered Categorical Variables Pre- and Post-Imputation
+	di _newline _newline "Creating (if applicable) diagnostic Table 6 of 11."
     tempvar cwlCAT
 	
 	local t6 0
@@ -378,7 +386,8 @@ program define PanelPatchDiag, rclass
                 mat preL`v'`lvl' = r(estimate)\r(se)
             }
         } //frames; using svyset in another frame
-        
+        cap frame drop `fr`v''
+
         qui levelsof `v', local(lvls)
         forv lvl = 1/`:list sizeof lvls'{
             mat `cwlCAT' = nullmat(`cwlCAT')\(preL`v'`lvl',postL`v'`lvl')
@@ -418,6 +427,7 @@ program define PanelPatchDiag, rclass
     } //T6
 
     { //***** Table 7 The correlation of each interval-valued repeating variable and Wave before and after imputation
+	di _newline _newline "Creating (if applicable) diagnostic Table 7 of 11."
 	cap confirm variable `:word 1 of `vnumericvars''
 	if _rc == 0{
 		
@@ -431,12 +441,12 @@ program define PanelPatchDiag, rclass
         qui levelsof `v', local(vlist)
         local rj = wordcount("`vlist'")
         if `rj'>10{
-            tempvar v1 v5
+            tempvar v1 v5 maxv1 maxv5
             qui gen `v1' = `v' if `wave' == `fWAVE'
-            qui bys `i': ereplace `v1' = max(`v1')
+            qui bys `i': egen `maxv1' = max(`v1')
             qui gen `v5' = `v' if `wave' == `lWAVE'
-            qui bys `i': ereplace `v5' = max(`v5')
-            PanelPatch_corr `v1' `v5' if `wave' == `fWAVE', weightvar(`firstweightvar'_wgtadj)
+            qui bys `i': egen `maxv5' = max(`v5')
+            PanelPatch_corr `maxv1' `maxv5' if `wave' == `fWAVE', weightvar(`firstweightvar'_wgtadj)
             mat `ivrCORRpost' = nullmat(`ivrCORRpost')\(`r(rho)')
             tempname fr
             qui pwf
@@ -445,21 +455,23 @@ program define PanelPatchDiag, rclass
                 cap mi unset
                 svyset `j' [pw = `firstweightvar']
                
-                tempvar x y x2 y2 xy 
+                tempvar x y x2 y2 xy maxx maxy
                    
                 qui: gen double `x' = `v' if `wave' == `fWAVE'
-                qui bys `i': ereplace `x' = max(`x')
-                quietly : gen double `x2' = `x'^2
+                qui bys `i': egen `maxx' = max(`x')
+                quietly : gen double `x2' = `maxx'^2
                 qui: gen double `y' = `v' if `wave' == `lWAVE'
-                qui bys `i': ereplace `y' = max(`y')
-                quietly : gen double `y2' = `y'^2
-                quietly : gen double `xy' = `x'*`y'
+                qui bys `i': egen `maxy' = max(`y')
+                quietly : gen double `y2' = `maxy'^2
+                quietly : gen double `xy' = `maxx'*`maxy'
 
-                quietly : svy: mean `x' `y' `x2' `y2' `xy' if `wave' == `fWAVE'
+                quietly : svy: mean `maxx' `maxy' `x2' `y2' `xy' if `wave' == `fWAVE'
                 tempname moments
                 matrix `moments' = e(b)			
                 mat `ivrCORRpre' = nullmat(`ivrCORRpre')\(`moments'[1,5]-`moments'[1,1]*`moments'[1,2])/(sqrt(`moments'[1,3]-`moments'[1,1]^2)*sqrt(`moments'[1,4]-`moments'[1,2]^2))
             } // end frame
+			cap frame drop `fr'
+
         } //if more than 10 categories, treat as interval-valued
     } //v; numeric repeating vars
 
@@ -499,6 +511,7 @@ program define PanelPatchDiag, rclass
     } //T7
 
     { //***** Table 8 R-squared for Linear Regression of Binary, Ordered Categorical, and Interval-Valued Variables on the set of Stable Variables in the Final Wave Pre- and Post-Imputation
+	di _newline _newline "Creating (if applicable) diagnostic Table 8 of 11."
     tempvar R2all preR2 postR2
     cap mat drop `R2all' `preR2' `postR2'
     qui levelsof `wave', local(lvls)
@@ -518,7 +531,7 @@ program define PanelPatchDiag, rclass
         scalar r2 = tanh(r2/`M')^2 //R2 using Fisher's z over imputed data
         mat `postR2' = nullmat(`postR2')\(`=r2')
         
-        cap frames drop `fr`v''
+        cap frame drop `fr`v''
         tempname fr`v'
         qui pwf
         frame copy `r(currentframe)' `fr`v''
@@ -530,6 +543,7 @@ program define PanelPatchDiag, rclass
             qui svy: reg `v' `regCONT' b1.(`regCAT') if `wave' == `fWAVE'
             mat `preR2' = nullmat(`preR2')\e(r2)
         } //frames; using svyset in another frame
+		cap frame drop `fr`v''
         
     } // v; all binary, ordered cat, and continuous vars
 
@@ -563,6 +577,7 @@ program define PanelPatchDiag, rclass
     } //T8
 
     { //***** Table 9 Kish Design Effect Pre- and Post-Weight Adjustment
+	di _newline _newline "Creating (if applicable) diagnostic Table 9 of 11."
     qui levelsof `wave', local(lvls)
     local fWAVE: list sizeof local(lvls)
     local fWAVE = `:word `fWAVE' of `lvls''
@@ -603,6 +618,7 @@ program define PanelPatchDiag, rclass
     } //T9
 
     { //***** Table 10 Weighted Means for Repeating Numeric Variables Pre- and Post-Weight Adjustment
+	di _newline _newline "Creating (if applicable) diagnostic Table 10 of 11."
 	cap confirm variable `:word 1 of `vnumericvars''
 	if _rc == 0{
     tempvar awmvVNUM
@@ -620,6 +636,7 @@ program define PanelPatchDiag, rclass
             qui mi estimate: svy: mean `v', over(`wave') //imputed means
             mat matPRE`v' = r(table) //pre matrix for variable
         } //frames; using svyset in another frame
+		cap frame drop `fr`v''
 
         mat `awmvVNUM' = nullmat(`awmvVNUM')\matPRE`v'[1..2,1...]\matPOST`v'[1..2,1...] //matrix only keeping means and SDs for pre and post
     } //v; 
@@ -661,6 +678,7 @@ program define PanelPatchDiag, rclass
     } //T10
 
     { //***** Table 11 Weighted Frequency for Binary and Categorical Repeating Variables Pre- and Post-Weight Adjustment
+	di _newline _newline "Creating (if applicable) diagnostic Table 11 of 11."
     cap mat drop `awfVCAT'
     cap drop `cons'
     tempvar awfVCATmini awfVCATwide awfVCAT cons
@@ -692,6 +710,7 @@ program define PanelPatchDiag, rclass
             mat matPRE`v' = r(table)
         }
     } //frames; using svyset in another frame
+    cap frame drop `fr`v''
 
     qui foreach v in `binCAT'{
         local start = 1
