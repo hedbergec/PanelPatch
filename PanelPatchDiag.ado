@@ -88,7 +88,7 @@ program define PanelPatchDiag, rclass
 
     *create macro for column names
     cap macro drop _cn
-    quietly : glevelsof `wave', local(wavelist)
+    quietly : levelsof `wave', local(wavelist)
     foreach w in `wavelist'{
         local cn `"`cn' "Wave `w'""'
         local cn: list clean cn
@@ -129,8 +129,9 @@ program define PanelPatchDiag, rclass
     qui gen `cons' = 1
 
     foreach v in `snumericvars' `sorderedvars' `sunorderedvars' `vnumericvars' `vorderedvars' `vunorderedvars'{
-        qui glevelsof `v'
-        if `r(J)' < 10{
+        qui levelsof `v', local(vlist)
+        local rj = wordcount("`vlist'")
+        if `rj' < 10{
             local binCAT = "`binCAT' `v'"
             local binCAT: list clean binCAT
         } //if fewer than 10 levels
@@ -160,10 +161,10 @@ program define PanelPatchDiag, rclass
             mat `wfVCATmini' = nullmat(`wfVCATmini')\(matPRE`v'[1,`row']\(matPRE`v'[2,`row']\matPOST`v'[1,`row'])\matPOST`v'[2,`row'])
         } //row; number of rows in matrix
         
-        qui glevelsof `v'
-        local lvlCNT = `r(J)'
-        qui glevelsof `wave'
-        local wvCNT = `r(J)'
+        qui levelsof `v', local(vlist)
+        local lvlCNT = wordcount("`vlist'")
+        qui levelsof `wave', local(wavelist)
+        local wvCNT = wordcount("`wavelist'")
         forv wv = 1/`wvCNT'{
             local end = `wv'*`lvlCNT'*4
             mat `wfVCATwide' = nullmat(`wfVCATwide'),(`wfVCATmini'[`start'..`end', 1])
@@ -176,8 +177,8 @@ program define PanelPatchDiag, rclass
 
     *create macro for column names
     cap macro drop _cn
-    quietly : glevelsof `wave', local(wavelist)
-    foreach w in `wavelist'{
+    quietly : levelsof `wave', local(wavelist)
+    foreach w in `wavelist' {
         local cn `"`cn' "Wave `w'""'
         local cn: list clean cn
     } //w; levels of wave
@@ -187,7 +188,7 @@ program define PanelPatchDiag, rclass
     *create macro for row names
     cap macro drop _rn
     foreach var in `binCAT'{ //using var name as "equation" for labeling
-        qui glevelsof `var', local(lvls)
+        qui levelsof `var', local(lvls)
         foreach lvl in `lvls'{
             local rn = `"`rn' "`var'_`lvl' (pre):Weighted Frequency" "`var'_`lvl'(pre):Clustered SE" "`var'_`lvl'(post):Weighted Frequency" "`var'_`lvl'(post):Clustered SE""'
         } //lvl; level of cat var
@@ -345,7 +346,7 @@ program define PanelPatchDiag, rclass
         cap drop `v'?
         qui tab `v', gen(`v')
         
-        qui glevelsof `v', local(lvls)
+        qui levelsof `v', local(lvls)
         foreach lvl in `lvls'{
             qui mi register imputed `v'`lvl'
         }
@@ -370,7 +371,7 @@ program define PanelPatchDiag, rclass
             cap mi unset
             qui svyset `j' [pw = `firstweightvar']
             
-            qui glevelsof `v', local(lvls)
+            qui levelsof `v', local(lvls)
             foreach lvl in `lvls'{
                 qui svy: reg `v'`lvl' `wave' 
                 qui lincom _b[`wave']
@@ -378,7 +379,7 @@ program define PanelPatchDiag, rclass
             }
         } //frames; using svyset in another frame
         
-        qui glevelsof `v', local(lvls)
+        qui levelsof `v', local(lvls)
         foreach lvl in `lvls'{
             mat `cwlCAT' = nullmat(`cwlCAT')\(preL`v'`lvl',postL`v'`lvl')
         }
@@ -390,7 +391,7 @@ program define PanelPatchDiag, rclass
     *create macro for row names
     cap macro drop _rn
     foreach var in `sunorderedvars' `vunorderedvars'{ //using var name as "equation" for labeling
-        qui glevelsof `var', local(lvls)
+        qui levelsof `var', local(lvls)
         foreach lvl in `lvls'{
             local rn = `"`rn' "`var'(`lvl'):Trend Estimate" "`var'(`lvl'):Clustered SE""'
             local rn: list clean rn
@@ -420,15 +421,16 @@ program define PanelPatchDiag, rclass
 	cap confirm variable `:word 1 of `vnumericvars''
 	if _rc == 0{
 		
-	qui glevelsof `wave', local(lvls)
+	qui levelsof `wave', local(lvls)
     local fWAVE = `:word 1 of `lvls''
     local lWAVE: list sizeof local(lvls)
     local lWAVE = `:word `lWAVE' of `lvls''
     tempvar ivrCORR ivrCORRpost ivrCORRpre
     cap mat drop `ivrCORR' `ivrCORRpost' `ivrCORRpre'
     qui foreach v in `vnumericvars'{
-        qui glevelsof `v'
-        if r(J)>10{
+        qui levelsof `v', local(vlist)
+        local rj = wordcount("`vlist'")
+        if `rj'>10{
             tempvar v1 v5
             qui gen `v1' = `v' if `wave' == `fWAVE'
             qui bys `i': ereplace `v1' = max(`v1')
@@ -469,8 +471,9 @@ program define PanelPatchDiag, rclass
     *create macro for row names
     cap macro drop _rn
     foreach var in `vnumericvars'{
-        qui glevelsof `var'
-        if r(J)>10{//using var name as "equation" for labeling
+        qui levelsof `var', local(var_list)
+        local rj = wordcount("`var_list'")
+        if `rj'>10{ //using var name as "equation" for labeling
             local rn = `"`rn' "`var'""'
             local rn: list clean rn
         } //if more than 10 categories, treat as interval-valued
@@ -498,7 +501,7 @@ program define PanelPatchDiag, rclass
     { //***** Table 8 R-squared for Linear Regression of Binary, Ordered Categorical, and Interval-Valued Variables on the set of Stable Variables in the Final Wave Pre- and Post-Imputation
     tempvar R2all preR2 postR2
     cap mat drop `R2all' `preR2' `postR2'
-    qui glevelsof `wave', local(lvls)
+    qui levelsof `wave', local(lvls)
     local fWAVE: list sizeof local(lvls)
     local fWAVE = `:word `fWAVE' of `lvls''
     local regCONT: list clean snumericvars
@@ -560,7 +563,7 @@ program define PanelPatchDiag, rclass
     } //T8
 
     { //***** Table 9 Kish Design Effect Pre- and Post-Weight Adjustment
-    qui glevelsof `wave', local(lvls)
+    qui levelsof `wave', local(lvls)
     local fWAVE: list sizeof local(lvls)
     local fWAVE = `:word `fWAVE' of `lvls''
 
@@ -623,7 +626,7 @@ program define PanelPatchDiag, rclass
 
     *create macro for column names
     cap macro drop _cn
-    quietly : glevelsof `wave', local(wavelist)
+    quietly : levelsof `wave', local(wavelist)
     foreach w in `wavelist'{
         local cn `"`cn' "Wave `w'""'
         local cn: list clean cn
@@ -664,8 +667,9 @@ program define PanelPatchDiag, rclass
     qui gen `cons' = 1
 
     foreach v in `snumericvars' `sorderedvars' `sunorderedvars' `vnumericvars' `vorderedvars' `vunorderedvars'{
-        qui glevelsof `v'
-        if `r(J)' < 10{
+        qui levelsof `v', local(vlist)
+        local rj = wordcount("`vlist'")
+        if `rj' < 10{
             local binCAT = "`binCAT' `v'"
             local binCAT: list clean binCAT
         } //if fewer than 10 levels
@@ -695,10 +699,10 @@ program define PanelPatchDiag, rclass
             mat `awfVCATmini' = nullmat(`awfVCATmini')\(matPRE`v'[1,`row']\(matPRE`v'[2,`row']\matPOST`v'[1,`row'])\matPOST`v'[2,`row'])
         } //row; number of rows in matrix
         
-        qui glevelsof `v'
-        local lvlCNT = `r(J)'
-        qui glevelsof `wave'
-        local wvCNT = `r(J)'
+        qui levelsof `v', local(vlist)
+        local lvlCNT = wordcount("`vlist'")
+        qui levelsof `wave', local(wavelist)
+        local wvCNT = wordcount("`wavelist'")
         forv wv = 1/`wvCNT'{
             local end = `wv'*`lvlCNT'*4
             mat `awfVCATwide' = nullmat(`awfVCATwide'),(`awfVCATmini'[`start'..`end', 1])
@@ -711,7 +715,7 @@ program define PanelPatchDiag, rclass
 
     *create macro for column names
     cap macro drop _cn
-    quietly : glevelsof `wave', local(wavelist)
+    quietly : levelsof `wave', local(wavelist)
     foreach w in `wavelist'{
         local cn `"`cn' "Wave `w'""'
         local cn: list clean cn
@@ -722,7 +726,7 @@ program define PanelPatchDiag, rclass
     *create macro for row names
     cap macro drop _rn
     qui foreach var in `binCAT'{ //using var name as "equation" for labeling
-        qui glevelsof `var', local(lvls)
+        qui levelsof `var', local(lvls)
         foreach lvl in `lvls'{
             local rn = `"`rn' "`var'_`lvl' (pre):Weighted Frequency" "`var'_`lvl'(pre):Clustered SE" "`var'_`lvl'(post):Weighted Frequency" "`var'_`lvl'(post):Clustered SE""'
         } //lvl; level of cat var
