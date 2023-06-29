@@ -348,7 +348,7 @@ program define PanelPatchDiag, rclass
         
         qui levelsof `v', local(lvls)
         foreach lvl in `lvls'{
-            qui mi register imputed `v'`lvl'
+            qui cap mi register imputed `v'`lvl'
         }
 
         qui mi query
