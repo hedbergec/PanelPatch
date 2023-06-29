@@ -751,6 +751,9 @@ program define PanelPatch , rclass
                 local diagcode `diagcode' `opt'(``opt'')
             }
         }
+
+        di _newline _newline "Running Diagnostic Tables"
+
         PanelPatchDiag ///
             , i(`i') j(`j') wave(`wave') ///
             waveresponseflag(`waveresponseflag') `diagcode'
