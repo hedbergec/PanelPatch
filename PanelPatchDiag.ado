@@ -233,7 +233,7 @@ program define PanelPatchDiag, rclass
 		local ++counter
         qui mi est (_b[`wave']): svy: reg `v' `wave'
         mat postL`counter' = r(table)[1,1]\r(table)[2,1]
-        qui eststo postQ`counter': mi est (_b[`wave'] + _b[c.`wave'#c.`wave']): svy: reg `v' c.`wave'##c.`wave'
+        qui mi est (_b[`wave'] + _b[c.`wave'#c.`wave']): svy: reg `v' c.`wave'##c.`wave'
         mat postQ`counter' = r(table)[1,1]\r(table)[2,1]
         
         tempname fr`counter'
