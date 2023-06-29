@@ -16,7 +16,7 @@ program define PanelPatch , rclass
         [VUnorderedvars(varlist)] ///
         [VOrderedvars(varlist)] ///
         [diagnosticdata(string)] ///
-        [minwave(integer 3)] // [RUNDIAGnostic] // [useold]
+        [minwave(integer 3)] [RUNDIAGnostic] [useold]
 
     
     /*
