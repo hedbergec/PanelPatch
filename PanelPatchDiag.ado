@@ -10,10 +10,11 @@ program define PanelPatchDiag, rclass
         [VOrderedvars(varlist)] 
 	
 	*First weight variable in case multiple weights listed
-	if "`weightvar'" != “” {
+	if "`weightvar'" != "" {
 		tokenize "`weightvar'"
-		local firstweightvar  `1’
+		local firstweightvar `1'
 	}
+
 
     *Setting 
     qui mi svyset `j' [pw = `firstweightvar'_wgtadj]
