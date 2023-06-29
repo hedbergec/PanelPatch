@@ -292,7 +292,7 @@ program define PanelPatchDiag, rclass
 	if _rc == 0{
 	
     qui foreach v in `vorderedvars'{
-        PanelPatch_gamma WaveID `v', weightvar(`firstweightvar'_wgtadj)
+        PanelPatch_gamma `wave' `v', weightvar(`firstweightvar'_wgtadj)
         mat `gocr' = nullmat(`gocr')\(`r(gamma)')
     } //v; unordered repeating vars
 
