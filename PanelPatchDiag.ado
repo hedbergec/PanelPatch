@@ -358,7 +358,7 @@ program define PanelPatchDiag, rclass
             qui tab _`m'_`v', gen(_`m'_`v')
         }
         
-        foreach lvl in `lvls'{
+        forv lvl = 1/`:list sizeof lvls'{
             qui mi est (_b[`wave']): svy: reg `v'`lvl' `wave'
             mat postL`v'`lvl' = r(table)[1,1]\r(table)[2,1]
         }
