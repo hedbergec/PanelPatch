@@ -10,7 +10,7 @@ program define PanelPatchDiag, rclass
         [VOrderedvars(varlist)] 
 	
 	*First weight variable in case multiple weights listed
-	If "`weightvar'" != “” {
+	if "`weightvar'" != “” {
 		tokenize "`weightvar'"
 		local firstweightvar  `1’
 	}
