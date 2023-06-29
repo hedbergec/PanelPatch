@@ -253,7 +253,7 @@ program define PanelPatchDiag, rclass
             mat preQ`counter' = r(estimate)\r(se)
         } //frames; using svyset in another frame
 
-        mat `cwlqNUM' = nullmat(`cwlqNUM')\(preL`v',postL`v',preQ`v',postQ`v')
+        mat `cwlqNUM' = nullmat(`cwlqNUM')\(preL`counter',postL`counter',preQ`counter',postQ`counter')
     } //v; numeric vars
 
     *create macro for column names
@@ -372,7 +372,7 @@ program define PanelPatchDiag, rclass
             qui svyset `j' [pw = `firstweightvar']
             
             qui levelsof `v', local(lvls)
-            foreach lvl in `lvls'{
+            forv lvl = 1/`:list sizeof lvls'{
                 qui svy: reg `v'`lvl' `wave' 
                 qui lincom _b[`wave']
                 mat preL`v'`lvl' = r(estimate)\r(se)
@@ -380,7 +380,7 @@ program define PanelPatchDiag, rclass
         } //frames; using svyset in another frame
         
         qui levelsof `v', local(lvls)
-        foreach lvl in `lvls'{
+        forv lvl = 1/`:list sizeof lvls'{
             mat `cwlCAT' = nullmat(`cwlCAT')\(preL`v'`lvl',postL`v'`lvl')
         }
     } //v; numeric vars
@@ -392,7 +392,7 @@ program define PanelPatchDiag, rclass
     cap macro drop _rn
     foreach var in `sunorderedvars' `vunorderedvars'{ //using var name as "equation" for labeling
         qui levelsof `var', local(lvls)
-        foreach lvl in `lvls'{
+        forv lvl = 1/`:list sizeof lvls'{
             local rn = `"`rn' "`var'(`lvl'):Trend Estimate" "`var'(`lvl'):Clustered SE""'
             local rn: list clean rn
         }
